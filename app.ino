@@ -36,11 +36,16 @@ void loop(void)
 {   
     bno.getEvent(&event);
     float xError = event.orientation.x - angle[0];
+    /*if (abs(xError) > 180)
+    {
+        xError > 0 ? xError -= 360 : xError += 360;
+    }*/
     float yError = event.orientation.y - angle[1];
     Serial.print("X: ");
-    Serial.print(event.orientation.x - angle[0]);
-    Serial.print("Y: ");
-    Serial.print(event.orientation.y - angle[1]);
+    Serial.print(xError);
+    Serial.print("\tY: ");
+    Serial.println(yError);
+    delay(100);
     digitalWrite(LED_BUILTIN, abs(xError) < ANGLE_DISPLACEMENT && abs(yError) < ANGLE_DISPLACEMENT);
 
     
@@ -53,4 +58,8 @@ void setAngle()
     angle[0] = event.orientation.x;
     angle[1] = event.orientation.y + 90.0;
     angle[2] = event.orientation.z;
+    Serial.println("Angle was saved");
+    Serial.print(angle[0]);
+    Serial.print(angle[1]);
+    Serial.print(angle[2]);
 }
