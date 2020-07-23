@@ -36,10 +36,12 @@ void loop(void)
 {   
     bno.getEvent(&event);
     float xError = event.orientation.x - angle[0];
-    /*if (abs(xError) > 180)
-    {
+    if (abs(xError) > 270) {
         xError > 0 ? xError -= 360 : xError += 360;
-    }*/
+    } else if (abs(xError) > 90) {
+        xError > 0 ? xError -= 180 : xError += 180;
+    }
+    
     float yError = event.orientation.y - angle[1];
     Serial.print("X: ");
     Serial.print(xError);
