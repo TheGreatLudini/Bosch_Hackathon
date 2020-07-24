@@ -85,20 +85,28 @@ void loop(void)
     // If the dot product is 0, the respective axis is orthogonal to the wall normal, therefore good
     double localLeftRightError = wallNormal.dot(yLocal);
     double localUpDownError = wallNormal.dot(zLocal);
+    Serial.print("LR_Error: ");
+    Serial.print(localLeftRightError);
+    Serial.print("\tUD_Error: ");
+    Serial.println(localUpDownError);
 
     // LED on if the drilling angle is correct
     digitalWrite(LED_BUILTIN, abs(localLeftRightError) < ANGLE_DISPLACEMENT && abs(localUpDownError) < ANGLE_DISPLACEMENT);
 
     
     if (localUpDownError >= 0) {
-        analogWrite(LED_UP, localUpDownError * 255));
+        analogWrite(LED_UP, localUpDownError * 255);
+        analogWrite(LED_DOWN, 0);
     } else {
         analogWrite(LED_DOWN, -(localUpDownError * 255));
+        analogWrite(LED_UP, 0);
     }
     if (localLeftRightError >= 0) {
-        analogWrite(LED_LEFT, localLeftRightError * 255));
+        analogWrite(LED_LEFT, localLeftRightError * 255);
+        analogWrite(LED_RIGHT, 0);
     } else {
         analogWrite(LED_RIGHT, -(localLeftRightError * 255));
+        analogWrite(LED_LEFT, 0);
     }
     
 

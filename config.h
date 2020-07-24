@@ -2,10 +2,10 @@
 #define CONFIG_H
 
 const uint8_t INTERRUPT_PIN = 2;
-const uint8_t LED_UP = 5;
-const uint8_t LED_RIGHT = 6;
-const uint8_t LED_DOWN = 9;
-const uint8_t LED_LEFT = 10;
+const uint8_t LED_UP = 10;
+const uint8_t LED_RIGHT = 9;
+const uint8_t LED_DOWN = 6;
+const uint8_t LED_LEFT = 5;
 
 
 const uint8_t MOTOR_SPEED_PIN = 3;
