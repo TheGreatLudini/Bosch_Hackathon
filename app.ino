@@ -10,11 +10,8 @@
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
 imu::Vector<3> wallNormal(0.0, 0.0, 0.0);
-<<<<<<< HEAD
 imu::Vector<3> wall_X(0.0, 0.0, 0.0);
 imu::Vector<3> wall_Y(0.0, 0.0, 0.0);
-=======
->>>>>>> origin/scalarProductQuat
 
 bool initialize = false;
 
