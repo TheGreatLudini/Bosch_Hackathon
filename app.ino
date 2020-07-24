@@ -9,8 +9,7 @@
 
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
-sensors_event_t event; 
-float angle[] = {0, 0, 0};
+imu::Vector wallNormal<3>(0.0, 0.0, 0.0);
 
 Motor myMotor = new Motor(MOTOR_FOR_DIR_PIN, MOTOR_BACK_DIR_PIN, MOTOR_SPEED_PIN);
     
