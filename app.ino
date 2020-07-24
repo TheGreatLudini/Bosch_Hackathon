@@ -4,14 +4,20 @@
 #include <utility/imumaths.h>
 
 #include "config.h"
-#include "Motor.h"
+// #include "Motor.h"
     
+// #define DEBUG_LOCAL_VECTOR
+#define DEBUG_MISSALIGN
 
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
 imu::Vector<3> wallNormal(0.0, 0.0, 0.0);
+imu::Vector<3> wall_X(0.0, 0.0, 0.0);
+imu::Vector<3> wall_Y(0.0, 0.0, 0.0);
 
-Motor myMotor = new Motor(MOTOR_FOR_DIR_PIN, MOTOR_BACK_DIR_PIN, MOTOR_SPEED_PIN);
+bool initialize = false;
+
+//Motor myMotor = new Motor(MOTOR_FOR_DIR_PIN, MOTOR_BACK_DIR_PIN, MOTOR_SPEED_PIN);
     
 void setup(void) 
 {
@@ -32,7 +38,7 @@ void setup(void)
     Serial.println("Setup almost almost done");
     pinMode(INTERRUPT_PIN, INPUT);
     pinMode(LED_BUILTIN, OUTPUT);
-    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), setAngle, RISING);
+    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), setAngle, FALLING);
     Serial.println("Setup done");
 }
     
@@ -40,6 +46,27 @@ void loop(void)
 {   
     // The current orientation of the screw driver is stored as a quaternion in "quat":
     imu::Quaternion quat = bno.getQuat();
+    imu::Vector<3> vectorToRotate(1.0, 0, 0);
+    imu::Vector<3> rotatedVector = quat.rotateVector(vectorToRotate);
+    if(initialize) {
+        initialize = false;
+        imu::Quaternion quat = bno.getQuat();
+        imu::Vector<3> Xvector(1.0, 0, 0);
+        imu::Vector<3> Yvector(0, 1.0, 0);
+        imu::Vector<3> Zvector(0, 0, 1.0);
+        wallNormal = quat.rotateVector(Zvector);
+        wall_Y = quat.rotateVector(Yvector);
+        wall_X = quat.rotateVector(Xvector);
+        double phi = DRILL_ANGLE_OFFSET / 180 * 3.1416;
+        imu::Quaternion rotQuat(cos(phi / 2), wall_Y.scale(sin(phi / 2)));
+        wallNormal = rotQuat.rotateVector(wallNormal);
+        Serial.print("X: ");
+        Serial.print(wallNormal.x());
+        Serial.print("\tY: ");
+        Serial.print(wallNormal.y());
+        Serial.print("\tZ: ");
+        Serial.println(wallNormal.z());
+    }
 
     imu::Vector<3> xGlobal(1.0, 0.0, 0.0);
     imu::Vector<3> yGlobal(0.0, 1.0, 0.0);
@@ -70,6 +97,14 @@ void loop(void)
     }
     */
 
+    #ifdef DEBUG_MISSALIGN
+    Serial.print("Missaligment Left: ");
+    Serial.print(localLeftRightError);
+    Serial.print("\tDOWN: ");
+    Serial.println(localUpDownError);
+    #endif
+
+    #ifdef DEBUG_LOCAL_VECTOR
     Serial.print("Alpha: ");
     Serial.print(quat.toEuler().x() / 3.1416 * 180);
     Serial.print("\tBeta: ");
@@ -82,6 +117,7 @@ void loop(void)
     Serial.print(yLocal.y());
     Serial.print("\tZ: ");
     Serial.println(zLocal.z());
+    #endif
     delay(100);
 
 
@@ -89,18 +125,8 @@ void loop(void)
 
 void setAngle()
 {
-    Serial.println("Interrupt");
-    sensors_event_t event2; 
-    bno.getEvent(&event2);
-    /*
-    angle[0] = event.orientation.x;
-    // angle[1] = event.orientation.y + 90.0;
-    angle[1] = event.orientation.y;
-    angle[2] = event.orientation.z;
-    Serial.println("Angle was saved");
-    Serial.print(angle[0]);
-    Serial.print(angle[1]);
-    Serial.print(angle[2]);*/
+    Serial.println("Initializing");
+    initialize = true;
 }
 
 void getCartesian(double* angles, double* vecToRotate, double* cartesian) {
