@@ -55,7 +55,7 @@ void loop(void)
     double localUpDownError = wallNormal.dot(zLocal);
 
     // LED on if the drilling angle is correct
-    digitalWrite(LED_BUILTIN, localLeftRightError < ANGLE_DISPLACEMENT && localUpDownError < ANGLE_DISPLACEMENT);
+    digitalWrite(LED_BUILTIN, abs(localLeftRightError) < ANGLE_DISPLACEMENT && abs(localUpDownError) < ANGLE_DISPLACEMENT);
 
 
 
