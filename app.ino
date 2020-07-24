@@ -4,14 +4,18 @@
 #include <utility/imumaths.h>
 
 #include "config.h"
-#include "Motor.h"
+//#include "Motor.h"
     
 
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
-imu::Vector wallNormal<3>(0.0, 0.0, 0.0);
+imu::Vector<3> wallNormal(0.0, 0.0, 0.0);
+imu::Vector<3> wall_X(0.0, 0.0, 0.0);
+imu::Vector<3> wall_Y(0.0, 0.0, 0.0);
 
-Motor myMotor = new Motor(MOTOR_FOR_DIR_PIN, MOTOR_BACK_DIR_PIN, MOTOR_SPEED_PIN);
+bool initialize = false;
+
+//Motor myMotor = new Motor(MOTOR_FOR_DIR_PIN, MOTOR_BACK_DIR_PIN, MOTOR_SPEED_PIN);
     
 void setup(void) 
 {
@@ -32,7 +36,7 @@ void setup(void)
     Serial.println("Setup almost almost done");
     pinMode(INTERRUPT_PIN, INPUT);
     pinMode(LED_BUILTIN, OUTPUT);
-    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), setAngle, RISING);
+    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), setAngle, FALLING);
     Serial.println("Setup done");
 }
     
@@ -41,35 +45,41 @@ void loop(void)
     imu::Quaternion quat = bno.getQuat();
     imu::Vector<3> vectorToRotate(1.0, 0, 0);
     imu::Vector<3> rotatedVector = quat.rotateVector(vectorToRotate);
-    Serial.print("Alpha: ");
-    Serial.print(quat.toEuler().x() / 3.1416 * 180);
-    Serial.print("\tBeta: ");
-    Serial.print(quat.toEuler().y() / 3.1416 * 180);
-    Serial.print("\tGamma: ");
-    Serial.println(quat.toEuler().z() / 3.1416 * 180);
-    Serial.print("X: ");
-    Serial.print(rotatedVector.x());
-    Serial.print("\tY: ");
-    Serial.print(rotatedVector.y());
-    Serial.print("\tZ: ");
-    Serial.println(rotatedVector.z());
+    if(initialize) {
+        initialize = false;
+        imu::Quaternion quat = bno.getQuat();
+        imu::Vector<3> Xvector(1.0, 0, 0);
+        imu::Vector<3> Yvector(0, 1.0, 0);
+        imu::Vector<3> Zvector(0, 0, 1.0);
+        wallNormal = quat.rotateVector(Zvector);
+        wall_Y = quat.rotateVector(Yvector);
+        wall_X = quat.rotateVector(Xvector);
+        Serial.print("X: ");
+        Serial.print(wallNormal.x());
+        Serial.print("\tY: ");
+        Serial.print(wallNormal.y());
+        Serial.print("\tZ: ");
+        Serial.println(wallNormal.z());
+    }
+    // Serial.print("Alpha: ");
+    // Serial.print(quat.toEuler().x() / 3.1416 * 180);
+    // Serial.print("\tBeta: ");
+    // Serial.print(quat.toEuler().y() / 3.1416 * 180);
+    // Serial.print("\tGamma: ");
+    // Serial.println(quat.toEuler().z() / 3.1416 * 180);
+    // Serial.print("X: ");
+    // Serial.print(rotatedVector.x());
+    // Serial.print("\tY: ");
+    // Serial.print(rotatedVector.y());
+    // Serial.print("\tZ: ");
+    // Serial.println(rotatedVector.z());
     delay(100);
 }
 
 void setAngle()
 {
-    Serial.println("Interrupt");
-    sensors_event_t event2; 
-    bno.getEvent(&event2);
-    /*
-    angle[0] = event.orientation.x;
-    // angle[1] = event.orientation.y + 90.0;
-    angle[1] = event.orientation.y;
-    angle[2] = event.orientation.z;
-    Serial.println("Angle was saved");
-    Serial.print(angle[0]);
-    Serial.print(angle[1]);
-    Serial.print(angle[2]);*/
+    Serial.println("Initializing");
+    initialize = true;
 }
 
 void getCartesian(double* angles, double* vecToRotate, double* cartesian) {
