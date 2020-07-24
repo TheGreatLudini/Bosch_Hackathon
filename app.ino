@@ -36,27 +36,22 @@ void setup(void)
     
 void loop(void) 
 {   
-    bno.getEvent(&event);
-    float xError = event.orientation.x - angle[0];
-    if (abs(xError) > 270) {
-        xError > 0 ? xError -= 360 : xError += 360;
-    } else if (abs(xError) > 90) {
-        xError > 0 ? xError -= 180 : xError += 180;
-    }
-    
-    float yError = event.orientation.y - angle[1];
-    delay(100);
-    digitalWrite(LED_BUILTIN, abs(xError) < ANGLE_DISPLACEMENT && abs(yError) < ANGLE_DISPLACEMENT);
-    double angles[3] = {event.orientation.x, event.orientation.y, event.orientation.z};
-    double cartesian[3];
-    double vecToRotate[3] = {1, 0, 0};
-    getCartesian(angles, vecToRotate, cartesian);
+    imu::Quaternion quat = bno.getQuat();
+    imu::Vector<3> vectorToRotate(1.0, 0, 0);
+    imu::Vector<3> rotatedVector = quat.rotateVector(vectorToRotate);
+    Serial.print("Alpha: ");
+    Serial.print(quat.toEuler().x() / 3.1416 * 180);
+    Serial.print("\tBeta: ");
+    Serial.print(quat.toEuler().y() / 3.1416 * 180);
+    Serial.print("\tGamma: ");
+    Serial.println(quat.toEuler().z() / 3.1416 * 180);
     Serial.print("X: ");
-    Serial.print(cartesian[0]);
-    Serial.print("\t Y: ");
-    Serial.print(cartesian[1]);
-    Serial.print("\t Z: ");
-    Serial.println(cartesian[2]);
+    Serial.print(rotatedVector.x());
+    Serial.print("\tY: ");
+    Serial.print(rotatedVector.y());
+    Serial.print("\tZ: ");
+    Serial.println(rotatedVector.z());
+    delay(100);
 }
 
 void setAngle()
