@@ -2,7 +2,6 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
-#include <MatrixMath.h>
 
 #include "config.h"
     
@@ -26,11 +25,13 @@ void setup(void)
     }
     
     delay(1000);
-    
+    Serial.println("Setup almost done");
     bno.setExtCrystalUse(true);
-    pinMode(INTERRUPT_PIN, INPUT_PULLUP);
+    Serial.println("Setup almost almost done");
+    pinMode(INTERRUPT_PIN, INPUT);
     pinMode(LED_BUILTIN, OUTPUT);
-    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), setAngle, FALLING);
+    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), setAngle, RISING);
+    Serial.println("Setup done");
 }
     
 void loop(void) 
@@ -52,36 +53,39 @@ void loop(void)
     getCartesian(angles, vecToRotate, cartesian);
     Serial.print("X: ");
     Serial.print(cartesian[0]);
-    Serial.print("/t Y: ");
+    Serial.print("\t Y: ");
     Serial.print(cartesian[1]);
-    Serial.print("/t Z: ");
+    Serial.print("\t Z: ");
     Serial.println(cartesian[2]);
 }
 
 void setAngle()
 {
-    bno.getEvent(&event);
-
+    Serial.println("Interrupt");
+    sensors_event_t event2; 
+    bno.getEvent(&event2);
+    /*
     angle[0] = event.orientation.x;
-    angle[1] = event.orientation.y + 90.0;
+    // angle[1] = event.orientation.y + 90.0;
+    angle[1] = event.orientation.y;
     angle[2] = event.orientation.z;
     Serial.println("Angle was saved");
     Serial.print(angle[0]);
     Serial.print(angle[1]);
-    Serial.print(angle[2]);
+    Serial.print(angle[2]);*/
 }
 
 void getCartesian(double* angles, double* vecToRotate, double* cartesian) {
-    uint8_t N = 3;
-    mtx_type rotMat[N][N]; 
-    getRot(angles, (mtx_type*) rotMat);
-    Matrix.Multiply((mtx_type*) (mtx_type*)rotMat, angles, N, N, N, (mtx_type*)cartesian);
+    double rotMat[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
+    getRot(angles, (double*)rotMat);
+    matrixMultip((double*)rotMat, vecToRotate, cartesian, 3, 3, 3, 1);
 }
+
 
 /**
  * conversion of euler values to cartesian with XYZ cnvention
  */
-void getRot(double* angles, mtx_type* rotMat) {
+void getRot(double* angles, double* rotMat) {
     rotMat[0] = cos(angles[1]) * cos(angles[2]);
     rotMat[1] = cos(angles[0]) * sin(angles[2]) + cos(angles[2]) * sin(angles[0]) * sin(angles[1]);
     rotMat[2] = sin(angles[0]) * sin(angles[2]) - cos(angles[0]) * cos(angles[2]) * sin(angles[1]);
@@ -92,3 +96,25 @@ void getRot(double* angles, mtx_type* rotMat) {
     rotMat[7] = -cos(angles[1]) * sin(angles[0]);
     rotMat[8] = cos(angles[0]) * cos(angles[1]);
 } 
+
+/**
+ * Multiplies two matrices with arbitrary dimensions
+ * Matrix A has dimensions m x p
+ * Matrix B has dimensions q x n
+ * p == q is required
+ * @param matResult The resulting matrix after multiplication
+ */
+void matrixMultip(double* matA, double* matB, double* matResult, int m, int p, int q, int n) {
+    
+    if (p == q) {
+        for (int i = 0; i < m; i++) {
+            for (int j = 0; j < n; j++) {
+                matResult[n * i + j] = 0;
+			    for (int k = 0; k < p; k++)
+				    matResult[n * i + j] = matResult[n * i + j] + matA[p * i + k] * matB[n * k + j];
+            }
+        }
+    } else {
+        Serial.println("Matrix dimensions do not match!");
+    }
+}
