@@ -38,6 +38,11 @@ void setup(void)
     Serial.println("Setup almost almost done");
     pinMode(INTERRUPT_PIN, INPUT);
     pinMode(LED_BUILTIN, OUTPUT);
+    pinMode(LED_UP, OUTPUT);
+    pinMode(LED_RIGHT, OUTPUT);
+    pinMode(LED_DOWN, OUTPUT);
+    pinMode(LED_LEFT, OUTPUT);
+
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), setAngle, FALLING);
     Serial.println("Setup done");
 }
@@ -84,18 +89,18 @@ void loop(void)
     // LED on if the drilling angle is correct
     digitalWrite(LED_BUILTIN, abs(localLeftRightError) < ANGLE_DISPLACEMENT && abs(localUpDownError) < ANGLE_DISPLACEMENT);
 
-    /*
+    
     if (localUpDownError >= 0) {
-        analogWrite(LED_Oben, localUpDownError * 255));
+        analogWrite(LED_UP, localUpDownError * 255));
     } else {
-        analogWrite(LED_Unten, -(localUpDownError * 255));
+        analogWrite(LED_DOWN, -(localUpDownError * 255));
     }
     if (localLeftRightError >= 0) {
-        analogWrite(LED_links, localLeftRightError * 255));
+        analogWrite(LED_LEFT, localLeftRightError * 255));
     } else {
-        analogWrite(LED_rechts, -(localLeftRightError * 255));
+        analogWrite(LED_RIGHT, -(localLeftRightError * 255));
     }
-    */
+    
 
     #ifdef DEBUG_MISSALIGN
     Serial.print("Missaligment Left: ");
