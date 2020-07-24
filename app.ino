@@ -2,6 +2,7 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
+#include <MatrixMath.h>
 
 #include "config.h"
     
@@ -43,14 +44,18 @@ void loop(void)
     }
     
     float yError = event.orientation.y - angle[1];
-    Serial.print("X: ");
-    Serial.print(xError);
-    Serial.print("\tY: ");
-    Serial.println(yError);
     delay(100);
     digitalWrite(LED_BUILTIN, abs(xError) < ANGLE_DISPLACEMENT && abs(yError) < ANGLE_DISPLACEMENT);
-
-    
+    double angles[3] = {event.orientation.x, event.orientation.y, event.orientation.z};
+    double cartesian[3];
+    double vecToRotate[3] = {1, 0, 0};
+    getCartesian(angles, vecToRotate, cartesian);
+    Serial.print("X: ");
+    Serial.print(cartesian[0]);
+    Serial.print("/t Y: ");
+    Serial.print(cartesian[1]);
+    Serial.print("/t Z: ");
+    Serial.println(cartesian[2]);
 }
 
 void setAngle()
@@ -65,3 +70,25 @@ void setAngle()
     Serial.print(angle[1]);
     Serial.print(angle[2]);
 }
+
+void getCartesian(double* angles, double* vecToRotate, double* cartesian) {
+    uint8_t N = 3;
+    mtx_type rotMat[N][N]; 
+    getRot(angles, (mtx_type*) rotMat);
+    Matrix.Multiply((mtx_type*) (mtx_type*)rotMat, angles, N, N, N, (mtx_type*)cartesian);
+}
+
+/**
+ * conversion of euler values to cartesian with XYZ cnvention
+ */
+void getRot(double* angles, mtx_type* rotMat) {
+    rotMat[0] = cos(angles[1]) * cos(angles[2]);
+    rotMat[1] = cos(angles[0]) * sin(angles[2]) + cos(angles[2]) * sin(angles[0]) * sin(angles[1]);
+    rotMat[2] = sin(angles[0]) * sin(angles[2]) - cos(angles[0]) * cos(angles[2]) * sin(angles[1]);
+    rotMat[3] = -cos(angles[1]) * sin(angles[2]);
+    rotMat[4] = cos(angles[0]) * cos(angles[2]) - sin(angles[0]) * sin(angles[1]) * sin(angles[2]);
+    rotMat[5] = sin(angles[0]) * cos(angles[2]) + cos(angles[0]) * sin(angles[1]) * sin(angles[2]);
+    rotMat[6] = sin(angles[1]);
+    rotMat[7] = -cos(angles[1]) * sin(angles[0]);
+    rotMat[8] = cos(angles[0]) * cos(angles[1]);
+} 
