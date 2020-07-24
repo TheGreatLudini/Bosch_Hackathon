@@ -7,7 +7,9 @@
 //#include "Motor.h"
     
 // #define DEBUG_LOCAL_VECTOR
-#define DEBUG_MISSALIGN
+// #define DEBUG_MISSALIGN
+// #define DEBUG_MOTOR
+#define DEBUG_TOTAL_ERROR
 
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
@@ -15,8 +17,8 @@ imu::Vector<3> wallNormal(0.0, 0.0, 0.0);
 imu::Vector<3> wall_X(0.0, 0.0, 0.0);
 imu::Vector<3> wall_Y(0.0, 0.0, 0.0);
 
-bool initialize = false;
-
+bool initialize = true;
+int interruptCounter = 0;
 //Motor myMotor = new Motor(MOTOR_FOR_DIR_PIN, MOTOR_BACK_DIR_PIN, MOTOR_SPEED_PIN);
     
 void setup(void) 
@@ -87,16 +89,31 @@ void loop(void)
     // If the dot product is 0, the respective axis is orthogonal to the wall normal, therefore good
     double localLeftRightError = wallNormal.dot(yLocal);
     double localUpDownError = wallNormal.dot(zLocal);
+
+    #ifdef DEBUG_TOTAL_ERROR
     Serial.print("LR_Error: ");
     Serial.print(localLeftRightError);
     Serial.print("\tUD_Error: ");
     Serial.println(localUpDownError);
+    #endif
 
     // LED on if the drilling angle is correct
     digitalWrite(LED_BUILTIN, abs(localLeftRightError) < ANGLE_DISPLACEMENT && abs(localUpDownError) < ANGLE_DISPLACEMENT);
 
-    double localErrorTotal = 0.5 * (abs(localUpDownError) + abs(localLeftRightError));
-    analogWrite(MOTOR_SPEED_PIN, 255);
+    double localErrorTotal = sqrt(pow(localUpDownError, 2) + pow(localLeftRightError, 2));
+    uint8_t motorSpeed(0);
+    if (localErrorTotal < MOTOR_ON_THESHOLD) {
+        localErrorTotal = localErrorTotal * 100 / 30 * 255;
+        motorSpeed = 255 - localErrorTotal;
+    }
+    analogWrite(MOTOR_SPEED_PIN, motorSpeed);
+    
+
+    #ifdef DEBUG_MOTOR
+    Serial.print("Motor Speed: ");
+    Serial.println(motorSpeed);
+    #endif
+
     
     if (localUpDownError >= 0) {
         analogWrite(LED_UP, localUpDownError * 255);
@@ -135,7 +152,7 @@ void loop(void)
     Serial.print("\tZ: ");
     Serial.println(zLocal.z());
     #endif
-    delay(100);
+    //delay(100);
 
 
 }
@@ -144,6 +161,7 @@ void setAngle()
 {
     Serial.println("Initializing");
     initialize = true;
+    interruptCounter++;
 }
 
 void getCartesian(double* angles, double* vecToRotate, double* cartesian) {
