@@ -10,8 +10,11 @@
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
 imu::Vector<3> wallNormal(0.0, 0.0, 0.0);
+<<<<<<< HEAD
 imu::Vector<3> wall_X(0.0, 0.0, 0.0);
 imu::Vector<3> wall_Y(0.0, 0.0, 0.0);
+=======
+>>>>>>> origin/scalarProductQuat
 
 bool initialize = false;
 
@@ -42,6 +45,7 @@ void setup(void)
     
 void loop(void) 
 {   
+    // The current orientation of the screw driver is stored as a quaternion in "quat":
     imu::Quaternion quat = bno.getQuat();
     imu::Vector<3> vectorToRotate(1.0, 0, 0);
     imu::Vector<3> rotatedVector = quat.rotateVector(vectorToRotate);
@@ -61,19 +65,40 @@ void loop(void)
         Serial.print("\tZ: ");
         Serial.println(wallNormal.z());
     }
-    // Serial.print("Alpha: ");
-    // Serial.print(quat.toEuler().x() / 3.1416 * 180);
-    // Serial.print("\tBeta: ");
-    // Serial.print(quat.toEuler().y() / 3.1416 * 180);
-    // Serial.print("\tGamma: ");
-    // Serial.println(quat.toEuler().z() / 3.1416 * 180);
-    // Serial.print("X: ");
-    // Serial.print(rotatedVector.x());
-    // Serial.print("\tY: ");
-    // Serial.print(rotatedVector.y());
-    // Serial.print("\tZ: ");
-    // Serial.println(rotatedVector.z());
+
+    imu::Vector<3> xGlobal(1.0, 0.0, 0.0);
+    imu::Vector<3> yGlobal(0.0, 1.0, 0.0);
+    imu::Vector<3> zGlobal(0.0, 0.0, 1.0);
+    // Coordinate system axes of screw driver in global coordinates, x is drilling axis:
+    imu::Vector<3> xLocal = quat.rotateVector(xGlobal);
+    imu::Vector<3> yLocal = quat.rotateVector(yGlobal);
+    imu::Vector<3> yLocal = quat.rotateVector(zGlobal);
+
+    // Angle error in up-down- and left-right-direction, determined via the dot product
+    // If the dot product is 0, the respective axis is orthogonal to the wall normal, therefore good
+    double localLeftRightError = wallNormal.dot(yLocal);
+    double localUpDownError = wallNormal.dot(zLocal);
+
+    // LED on if the drilling angle is correct
+    digitalWrite(LED_BUILTIN, abs(localLeftRightError) < ANGLE_DISPLACEMENT && abs(localUpDownError) < ANGLE_DISPLACEMENT);
+
+
+
+    Serial.print("Alpha: ");
+    Serial.print(quat.toEuler().x() / 3.1416 * 180);
+    Serial.print("\tBeta: ");
+    Serial.print(quat.toEuler().y() / 3.1416 * 180);
+    Serial.print("\tGamma: ");
+    Serial.println(quat.toEuler().z() / 3.1416 * 180);
+    Serial.print("X: ");
+    Serial.print(xLocal.x());
+    Serial.print("\tY: ");
+    Serial.print(yLocal.y());
+    Serial.print("\tZ: ");
+    Serial.println(zLocal.z());
     delay(100);
+
+
 }
 
 void setAngle()
