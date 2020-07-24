@@ -47,7 +47,7 @@ void loop(void)
     // Coordinate system axes of screw driver in global coordinates, x is drilling axis:
     imu::Vector<3> xLocal = quat.rotateVector(xGlobal);
     imu::Vector<3> yLocal = quat.rotateVector(yGlobal);
-    imu::Vector<3> yLocal = quat.rotateVector(zGlobal);
+    imu::Vector<3> zLocal = quat.rotateVector(zGlobal);
 
     // Angle error in up-down- and left-right-direction, determined via the dot product
     // If the dot product is 0, the respective axis is orthogonal to the wall normal, therefore good
@@ -57,7 +57,18 @@ void loop(void)
     // LED on if the drilling angle is correct
     digitalWrite(LED_BUILTIN, abs(localLeftRightError) < ANGLE_DISPLACEMENT && abs(localUpDownError) < ANGLE_DISPLACEMENT);
 
-
+    /*
+    if (localUpDownError >= 0) {
+        analogWrite(LED_Oben, localUpDownError * 255));
+    } else {
+        analogWrite(LED_Unten, -(localUpDownError * 255));
+    }
+    if (localLeftRightError >= 0) {
+        analogWrite(LED_links, localLeftRightError * 255));
+    } else {
+        analogWrite(LED_rechts, -(localLeftRightError * 255));
+    }
+    */
 
     Serial.print("Alpha: ");
     Serial.print(quat.toEuler().x() / 3.1416 * 180);
