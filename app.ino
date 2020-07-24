@@ -4,7 +4,7 @@
 #include <utility/imumaths.h>
 
 #include "config.h"
-// #include "Motor.h"
+//#include "Motor.h"
     
 // #define DEBUG_LOCAL_VECTOR
 #define DEBUG_MISSALIGN
@@ -42,6 +42,8 @@ void setup(void)
     pinMode(LED_RIGHT, OUTPUT);
     pinMode(LED_DOWN, OUTPUT);
     pinMode(LED_LEFT, OUTPUT);
+
+    pinMode(MOTOR_SPEED_PIN, OUTPUT);
 
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), setAngle, FALLING);
     Serial.println("Setup done");
@@ -93,6 +95,8 @@ void loop(void)
     // LED on if the drilling angle is correct
     digitalWrite(LED_BUILTIN, abs(localLeftRightError) < ANGLE_DISPLACEMENT && abs(localUpDownError) < ANGLE_DISPLACEMENT);
 
+    double localErrorTotal = 0.5 * (abs(localUpDownError) + abs(localLeftRightError));
+    analogWrite(MOTOR_SPEED_PIN, 255);
     
     if (localUpDownError >= 0) {
         analogWrite(LED_UP, localUpDownError * 255);
