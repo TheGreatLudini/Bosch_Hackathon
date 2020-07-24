@@ -4,8 +4,10 @@
 #include <utility/imumaths.h>
 
 #include "config.h"
-//#include "Motor.h"
+// #include "Motor.h"
     
+// #define DEBUG_LOCAL_VECTOR
+#define DEBUG_MISSALIGN
 
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
@@ -55,6 +57,9 @@ void loop(void)
         wallNormal = quat.rotateVector(Zvector);
         wall_Y = quat.rotateVector(Yvector);
         wall_X = quat.rotateVector(Xvector);
+        double phi = DRILL_ANGLE_OFFSET / 180 * 3.1416;
+        imu::Quaternion rotQuat(cos(phi / 2), wall_Y.scale(sin(phi / 2)));
+        wallNormal = rotQuat.rotateVector(wallNormal);
         Serial.print("X: ");
         Serial.print(wallNormal.x());
         Serial.print("\tY: ");
@@ -69,7 +74,7 @@ void loop(void)
     // Coordinate system axes of screw driver in global coordinates, x is drilling axis:
     imu::Vector<3> xLocal = quat.rotateVector(xGlobal);
     imu::Vector<3> yLocal = quat.rotateVector(yGlobal);
-    imu::Vector<3> yLocal = quat.rotateVector(zGlobal);
+    imu::Vector<3> zLocal = quat.rotateVector(zGlobal);
 
     // Angle error in up-down- and left-right-direction, determined via the dot product
     // If the dot product is 0, the respective axis is orthogonal to the wall normal, therefore good
@@ -79,8 +84,14 @@ void loop(void)
     // LED on if the drilling angle is correct
     digitalWrite(LED_BUILTIN, abs(localLeftRightError) < ANGLE_DISPLACEMENT && abs(localUpDownError) < ANGLE_DISPLACEMENT);
 
+    #ifdef DEBUG_MISSALIGN
+    Serial.print("Missaligment Left: ");
+    Serial.print(localLeftRightError);
+    Serial.print("\tDOWN: ");
+    Serial.println(localUpDownError);
+    #endif
 
-
+    #ifdef DEBUG_LOCAL_VECTOR
     Serial.print("Alpha: ");
     Serial.print(quat.toEuler().x() / 3.1416 * 180);
     Serial.print("\tBeta: ");
@@ -93,6 +104,7 @@ void loop(void)
     Serial.print(yLocal.y());
     Serial.print("\tZ: ");
     Serial.println(zLocal.z());
+    #endif
     delay(100);
 
 
