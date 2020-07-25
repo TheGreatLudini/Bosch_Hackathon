@@ -138,12 +138,16 @@ void loop(void)
 
 void setAngle()
 {
-    if (interruptCounter == 0 && abs(millis() - interruptTime) > 1000) {
+    if (abs(millis() - interruptTime) > 500) {
+        interruptCounter = 0;
+    }
+    if (interruptCounter == 0) {
         interruptCounter++;
         preciceInitialize = true;
         initGuard = true;
     } else if (abs(millis() - interruptTime) > debounce) {
         interruptCounter = 0;
+        preciceInitialize = false;
         initialize = true;
     }
 
@@ -181,7 +185,6 @@ void preciceInit() {
  */
 void Init() {
     initialize = false;
-    preciceInitialize = false;
     imu::Quaternion quat = bno.getQuat();
     imu::Vector<3> Xvector(1.0, 0, 0);
     imu::Vector<3> Yvector(0, 1.0, 0);
