@@ -18,5 +18,15 @@ const float ANGLE_DISPLACEMENT = 10.0;
 
 const uint32_t debounce(10); // 20 ms debounce time to prevent flickerining
 
+// BLE Battery Service
+BLEService angleService("Angle_service");
+
+// BLE Battery Level Characteristic
+BLEUnsignedIntCharacteristic SetAngleChar("SetAngleChar", BLERead | BLEWrite);
+BLEUnsignedIntCharacteristic GetAngleChar("GetAngleChar", BLERead);
+BLEUnsignedIntCharacteristic CalibrateChar("CalibrateChar", BLERead | BLENotify);
+
+
+
 
 #endif

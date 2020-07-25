@@ -3,6 +3,8 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
+#include <ArduinoBLE.h>
+
 
 #include "config.h"
 //#include "Motor.h"
@@ -10,9 +12,10 @@
 // #define DEBUG_LOCAL_VECTOR
 // #define DEBUG_MISSALIGN
 // #define DEBUG_MOTOR
-#define DEBUG_TOTAL_ERROR
-#define DEBUG_ERROR_DIR
+//#define DEBUG_TOTAL_ERROR
+//#define DEBUG_ERROR_DIR
 //#define DEBUG_MISSALIGN
+#define DEBUG_BLE
 
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
@@ -26,19 +29,26 @@ bool initGuard = false;
 uint32_t interruptTime(0);
 uint8_t interruptCounter(0);
 
-//Motor myMotor = new Motor(MOTOR_FOR_DIR_PIN, MOTOR_BACK_DIR_PIN, MOTOR_SPEED_PIN);
     
-void setup(void) 
+void setup() 
 {
+    pinMode(LED_BUILTIN, OUTPUT);
     Serial.begin(9600);
-    Serial.println("Orientation Sensor Test"); Serial.println("");
+    while(!Serial){
+        delay(1);
+    }
+    Serial.println("Orientation Sensor Test"); 
+    Serial.println("");
+
     
     /* Initialise the sensor */
     if(!bno.begin())
     {
     /* There was a problem detecting the BNO055 ... check your connections */
     Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
+    #ifndef DEBUG_BLE
     while(1);
+    #endif
     }
     
     delay(1000);
@@ -46,7 +56,6 @@ void setup(void)
     bno.setExtCrystalUse(true);
     Serial.println("Setup almost almost done");
     pinMode(INTERRUPT_PIN, INPUT);
-    pinMode(LED_BUILTIN, OUTPUT);
     pinMode(LED_UP, OUTPUT);
     pinMode(LED_RIGHT, OUTPUT);
     pinMode(LED_DOWN, OUTPUT);
@@ -54,12 +63,16 @@ void setup(void)
 
     pinMode(MOTOR_SPEED_PIN, OUTPUT);
 
+    #ifndef DEBUG_BLE
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), setAngle, FALLING);
+    #endif
+    initBLE();
     Serial.println("Setup done");
 }
     
 void loop(void) 
 {   
+    loopBLE();
     // The current orientation of the screw driver is stored as a quaternion in "quat":
     imu::Quaternion quat = bno.getQuat();
     imu::Vector<3> vectorToRotate(1.0, 0, 0);
@@ -89,7 +102,7 @@ void loop(void)
     double localUpDownError = wallNormal.dot(zLocal);
 
     // LED on if the drilling angle is correct
-    digitalWrite(LED_BUILTIN, abs(localLeftRightError) < ANGLE_DISPLACEMENT && abs(localUpDownError) < ANGLE_DISPLACEMENT);
+    
 
     double localErrorTotal = sqrt(pow(localUpDownError, 2) + pow(localLeftRightError, 2));
     uint8_t motorSpeed(0);
@@ -171,7 +184,7 @@ void setAngle()
     }
 
     interruptTime = millis();
-    Serial.println("Initializing");
+    //Serial.println("Initializing");
 }
 
 /**
@@ -219,7 +232,6 @@ void Init() {
     Serial.println(wallNormal.z());
 }
 
-
 void getCartesian(double* angles, double* vecToRotate, double* cartesian) {
     double rotMat[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
     getRot(angles, (double*)rotMat);
@@ -262,4 +274,74 @@ void matrixMultip(double* matA, double* matB, double* matResult, int m, int p, i
     } else {
         Serial.println("Matrix dimensions do not match!");
     }
+}
+
+
+
+void initBLE(){
+
+    // begin initialization
+    if (!BLE.begin()) {
+        Serial.println("starting BLE failed!");
+        while (1);
+    }
+
+    /* Set a local name for the BLE device
+        This name will appear in advertising packets
+        and can be used by remote devices to identify this BLE device
+        The name can be changed but maybe be truncated based on space left in advertisement packet
+    */
+    BLE.setLocalName("Schraubenmaster4000");
+
+    BLE.setAdvertisedService(angleService); // add the service UUID
+
+    angleService.addCharacteristic(SetAngleChar); // add the battery level characteristic
+    angleService.addCharacteristic(GetAngleChar); // add the battery level characteristic
+    angleService.addCharacteristic(CalibrateChar); // add the battery level characteristic
+
+    BLE.addService(angleService); // Add the battery service
+
+    SetAngleChar.writeValue(1111111111); // set initial value for this characteristic
+    GetAngleChar.writeValue(1111111111); // set initial value for this characteristic
+    CalibrateChar.writeValue(0); // set initial value for this characteristic
+
+
+    // start advertising
+    BLE.advertise();
+
+    Serial.println("Bluetooth device active, waiting for connections...");
+}
+void loopBLE(){
+    // wait for a BLE central
+    BLEDevice central = BLE.central();
+
+    // if a central is connected to the peripheral:
+    if (central) {
+        #ifdef DEBUG_BLE
+        Serial.print("Connected to central: ");
+        // print the central's BT address:
+        Serial.println(central.address());
+        #endif
+    }
+    if(SetAngleChar.written()){
+        String zw = String(SetAngleChar.value());
+        String zw1 = zw.substring(0,5);
+        String zw2 = zw.substring(5,10);
+        if(zw1.substring(0,1) == "1"){
+            int x = -(zw1.substring(1).toInt());
+        } else
+        {
+            int x = zw1.substring(1).toInt();
+        }
+        if(zw2.substring(0,1) == "1"){
+            int y = -(zw2.substring(1).toInt());
+        } else
+        {
+            int y = zw2.substring(1).toInt();
+        }   
+    }
+    if(CalibrateChar.written()){
+        CalibrateChar.writeValue(0);
+    }
+    //Irgend was mit den ergebnissen machen!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
 }
