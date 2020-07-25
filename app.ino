@@ -1,4 +1,5 @@
 #include <Wire.h>
+#include <Arduino.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
@@ -10,15 +11,21 @@
 // #define DEBUG_MISSALIGN
 // #define DEBUG_MOTOR
 #define DEBUG_TOTAL_ERROR
+#define DEBUG_ERROR_DIR
+//#define DEBUG_MISSALIGN
 
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
+
 imu::Vector<3> wallNormal(0.0, 0.0, 0.0);
 imu::Vector<3> wall_X(0.0, 0.0, 0.0);
 imu::Vector<3> wall_Y(0.0, 0.0, 0.0);
-
 bool initialize = true;
-int interruptCounter = 0;
+bool preciceInitialize = false;
+bool initGuard = false;
+uint32_t interruptTime(0);
+uint8_t interruptCounter(0);
+
 //Motor myMotor = new Motor(MOTOR_FOR_DIR_PIN, MOTOR_BACK_DIR_PIN, MOTOR_SPEED_PIN);
     
 void setup(void) 
@@ -57,24 +64,15 @@ void loop(void)
     imu::Quaternion quat = bno.getQuat();
     imu::Vector<3> vectorToRotate(1.0, 0, 0);
     imu::Vector<3> rotatedVector = quat.rotateVector(vectorToRotate);
-    if(initialize) {
-        initialize = false;
-        imu::Quaternion quat = bno.getQuat();
-        imu::Vector<3> Xvector(1.0, 0, 0);
-        imu::Vector<3> Yvector(0, 1.0, 0);
-        imu::Vector<3> Zvector(0, 0, 1.0);
-        wallNormal = quat.rotateVector(Zvector);
-        wall_Y = quat.rotateVector(Yvector);
-        wall_X = quat.rotateVector(Xvector);
-        double phi = DRILL_ANGLE_OFFSET / 180 * 3.1416;
-        imu::Quaternion rotQuat(cos(phi / 2), wall_Y.scale(sin(phi / 2)));
-        wallNormal = rotQuat.rotateVector(wallNormal);
-        Serial.print("X: ");
-        Serial.print(wallNormal.x());
-        Serial.print("\tY: ");
-        Serial.print(wallNormal.y());
-        Serial.print("\tZ: ");
-        Serial.println(wallNormal.z());
+
+    if (!initGuard) {
+        if (preciceInitialize) {
+            preciceInit();
+        } else if (initialize) {
+            Init();
+        }
+    } else if (abs(millis() - interruptTime) > 2 * debounce) {
+        initGuard = false;
     }
 
     imu::Vector<3> xGlobal(1.0, 0.0, 0.0);
@@ -89,13 +87,6 @@ void loop(void)
     // If the dot product is 0, the respective axis is orthogonal to the wall normal, therefore good
     double localLeftRightError = wallNormal.dot(yLocal);
     double localUpDownError = wallNormal.dot(zLocal);
-
-    #ifdef DEBUG_TOTAL_ERROR
-    Serial.print("LR_Error: ");
-    Serial.print(localLeftRightError);
-    Serial.print("\tUD_Error: ");
-    Serial.println(localUpDownError);
-    #endif
 
     // LED on if the drilling angle is correct
     digitalWrite(LED_BUILTIN, abs(localLeftRightError) < ANGLE_DISPLACEMENT && abs(localUpDownError) < ANGLE_DISPLACEMENT);
@@ -131,6 +122,13 @@ void loop(void)
     }
     
 
+    #ifdef DEBUG_ERROR_DIR
+    Serial.print("LR_Error: ");
+    Serial.print(localLeftRightError);
+    Serial.print("\tUD_Error: ");
+    Serial.println(localUpDownError);
+    #endif
+
     #ifdef DEBUG_MISSALIGN
     Serial.print("Missaligment Left: ");
     Serial.print(localLeftRightError);
@@ -159,9 +157,66 @@ void loop(void)
 
 void setAngle()
 {
+    if (abs(millis() - interruptTime) > 500) {
+        interruptCounter = 0;
+    }
+    if (interruptCounter == 0) {
+        interruptCounter++;
+        preciceInitialize = true;
+        initGuard = true;
+    } else if (abs(millis() - interruptTime) > debounce) {
+        interruptCounter = 0;
+        preciceInitialize = false;
+        initialize = true;
+    }
+
+    interruptTime = millis();
     Serial.println("Initializing");
-    initialize = true;
-    interruptCounter++;
+}
+
+/**
+ * initializes the Wall coordinates assuming the drill
+ * is hold against a wall
+ */
+void preciceInit() {
+    preciceInitialize = false;
+    imu::Quaternion quat = bno.getQuat();
+    imu::Vector<3> Xvector(1.0, 0, 0);
+    imu::Vector<3> Yvector(0, 1.0, 0);
+    imu::Vector<3> Zvector(0, 0, 1.0);
+    wallNormal = quat.rotateVector(Zvector);
+    wall_Y = quat.rotateVector(Yvector);
+    wall_X = quat.rotateVector(Xvector);
+    double phi = DRILL_ANGLE_OFFSET / 180 * 3.1416;
+    imu::Quaternion rotQuat(cos(phi / 2), wall_Y.scale(sin(phi / 2)));
+    wallNormal = rotQuat.rotateVector(wallNormal);
+    Serial.print("X: ");
+    Serial.print(wallNormal.x());
+    Serial.print("\tY: ");
+    Serial.print(wallNormal.y());
+    Serial.print("\tZ: ");
+    Serial.println(wallNormal.z());
+}
+
+/**
+ * initializes the Wall coordinates assuming the drill
+ * faces the direction the user wants to drill
+ */
+void Init() {
+    initialize = false;
+    imu::Quaternion quat = bno.getQuat();
+    imu::Vector<3> Xvector(1.0, 0, 0);
+    imu::Vector<3> Yvector(0, 1.0, 0);
+    imu::Vector<3> Zvector(0, 0, 1.0);
+    wallNormal = quat.rotateVector(Xvector);
+    wall_Y = quat.rotateVector(Zvector);
+    wall_X = quat.rotateVector(Yvector);
+    Serial.print("X: ");
+    Serial.print(wallNormal.x());
+    Serial.print("\tY: ");
+    Serial.print(wallNormal.y());
+    Serial.print("\tZ: ");
+    Serial.println(wallNormal.z());
 }
 
 void getCartesian(double* angles, double* vecToRotate, double* cartesian) {

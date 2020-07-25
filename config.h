@@ -16,5 +16,7 @@ const double MOTOR_ON_THESHOLD(0.3);
 
 const float ANGLE_DISPLACEMENT = 10.0;
 
+const uint32_t debounce(10); // 20 ms debounce time to prevent flickerining
+
 
 #endif
