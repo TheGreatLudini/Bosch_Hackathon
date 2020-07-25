@@ -155,7 +155,7 @@ void setAngle()
  * initializes the Wall coordinates assuming the drill
  * is hold against a wall
  */
-void preciceInitialize() {
+void preciceInit() {
     preciceInitialize = false;
     imu::Quaternion quat = bno.getQuat();
     imu::Vector<3> Xvector(1.0, 0, 0);
