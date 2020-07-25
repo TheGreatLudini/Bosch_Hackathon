@@ -26,6 +26,9 @@ bool initGuard = false;
 uint32_t interruptTime(0);
 uint8_t interruptCounter(0);
 
+double motorCurrentHistory[FILTERLENGTH]; 
+uint32_t counter;
+
 //Motor myMotor = new Motor(MOTOR_FOR_DIR_PIN, MOTOR_BACK_DIR_PIN, MOTOR_SPEED_PIN);
     
 void setup(void) 
@@ -45,21 +48,29 @@ void setup(void)
     Serial.println("Setup almost done");
     bno.setExtCrystalUse(true);
     Serial.println("Setup almost almost done");
-    pinMode(INTERRUPT_PIN, INPUT);
+    #ifdef BOARD_NANO
+        pinMode(INTERRUPT_PIN, INPUT);
+    #else
+        pinMode(INTERRUPT_PIN, INPUT_PULLUP);
+    #endif
+
     pinMode(LED_BUILTIN, OUTPUT);
     pinMode(LED_UP, OUTPUT);
     pinMode(LED_RIGHT, OUTPUT);
     pinMode(LED_DOWN, OUTPUT);
     pinMode(LED_LEFT, OUTPUT);
-
+    pinMode(CURRENT_SENSE_PIN, INPUT);
     pinMode(MOTOR_SPEED_PIN, OUTPUT);
 
+    memset(motorCurrentHistory, 0, FILTERLENGTH * 8);
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), setAngle, FALLING);
     Serial.println("Setup done");
 }
     
 void loop(void) 
 {   
+    double motorCurrent = CurrentMeasurment();
+    
     // The current orientation of the screw driver is stored as a quaternion in "quat":
     imu::Quaternion quat = bno.getQuat();
     imu::Vector<3> vectorToRotate(1.0, 0, 0);
@@ -174,6 +185,17 @@ void setAngle()
     Serial.println("Initializing");
 }
 
+double CurrentMeasurment() {
+    double motorCurrent(0);
+    motorCurrentHistory[counter % FILTERLENGTH] = CURRENT_FACTOR * analogRead(CURRENT_SENSE_PIN);
+    for (int i = 0; i < FILTERLENGTH; i++) {
+        motorCurrent += motorCurrentHistory[i];
+    }
+    motorCurrent = motorCurrent / FILTERLENGTH;
+    counter++;
+    return motorCurrent;
+}
+
 /**
  * initializes the Wall coordinates assuming the drill
  * is hold against a wall
@@ -225,7 +247,6 @@ void getCartesian(double* angles, double* vecToRotate, double* cartesian) {
     getRot(angles, (double*)rotMat);
     matrixMultip((double*)rotMat, vecToRotate, cartesian, 3, 3, 3, 1);
 }
-
 
 /**
  * conversion of euler values to cartesian with XYZ cnvention

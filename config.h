@@ -1,10 +1,15 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define CURRENT_SENSE_PIN A1
+#if defined(ARDUINO_AVR_NANO)       
+    #define BOARD_NANO
+    const float REF_VOLTAGE(5.0);
+#else
+    const float REF_VOLTAGE(3.3);
+#endif
+
 
 const uint8_t INTERRUPT_PIN = 2;
-const uint32_t debounce(20); // 20 ms debounce time to prevent flickerining
 
 const uint8_t LED_UP = 10;
 const uint8_t LED_RIGHT = 9;
@@ -18,7 +23,12 @@ const uint8_t MOTOR_FOR_DIR_PIN = 5;
 const uint8_t DRILL_ANGLE_OFFSET = 8; // 8 deg
 const double MOTOR_ON_THESHOLD(0.3);
 
-const float ANGLE_DISPLACEMENT = 10.0;
+// Current measurement
+#define CURRENT_SENSE_PIN A1
+const double GAIN(20.0);
+const double SENSE_RESISTANCE(0.002);
+const double CURRENT_FACTOR = REF_VOLTAGE / (1023 * GAIN * SENSE_RESISTANCE);
+const uint16_t FILTERLENGTH(50);
 
 const uint32_t debounce(10); // 20 ms debounce time to prevent flickerining
 
