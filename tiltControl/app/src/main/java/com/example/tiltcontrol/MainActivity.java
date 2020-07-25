@@ -2,8 +2,6 @@ package com.example.tiltcontrol;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.graphics.BitmapFactory;
-import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.widget.TextView;
 
@@ -18,9 +16,6 @@ import com.anychart.enums.MarkerType;
 import com.anychart.enums.TooltipDisplayMode;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,10 +25,16 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
+
 public class MainActivity extends AppCompatActivity {
 
     private TextView mTextViewResult;
     private AnyChartView anyChartView;
+
+    String baseUrl = "http://192.168.4.1";
+    OkHttpClient client = new OkHttpClient();
+
+    List<Double> angles = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,10 +42,44 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         anyChartView = (AnyChartView) findViewById(R.id.any_chart_view);
-        mTextViewResult = findViewById(R.id.test_view_result);
 
-        OkHttpClient client = new OkHttpClient();
-        String url = "http://192.168.4.1/testValue"; //http://192.168.4.1/testValue
+        Crosshairs myCross = new Crosshairs(anyChartView);
+    }
+
+    public class Crosshairs {
+        private List<DataEntry> currentAngle = new ArrayList<>();
+        Scatter scatter;
+        AnyChartView myView;
+        public void drawCrosshairs(AnyChartView myView){
+
+        }
+        public void changeCoordinate(double x, double y){
+            currentAngle.remove(0);
+            currentAngle.add(new ValueDataEntry(x,y));
+        }
+        public Crosshairs(AnyChartView View) {
+            myView = View;
+            currentAngle.add(new ValueDataEntry(0.0,0.0));
+            scatter = AnyChart.scatter();
+            scatter.animation(true);
+            scatter.title("Zielen und Vorwärts");
+            scatter.xScale()
+                    .minimum(-1d)
+                    .maximum(1d);
+            scatter.yScale()
+                    .minimum(-1d)
+                    .maximum(1d);
+            scatter.tooltip().displayMode(TooltipDisplayMode.UNION);
+            Marker marker = scatter.marker(currentAngle);
+            marker.type(MarkerType.CIRCLE)
+                    .size(8d);
+            myView.setChart(scatter);
+            myView.bringToFront();
+        }
+    }
+
+    void getTilt(final Crosshairs myCrosshairs){
+        String url = baseUrl + "/getLocalTilt";
         Request request = new Request.Builder()
                 .url(url)
                 .build();
@@ -58,61 +93,33 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(Call call, Response response) throws IOException {
                 if (response.isSuccessful()) {
                     final String myResponse = response.body().string();
-                    MainActivity.this.runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
+                    String[] parts = myResponse.split("_");
+                    angles.remove(1);
+                    angles.remove(0);
+                    angles.add(Double.parseDouble(parts[0]));
+                    angles.add(Double.parseDouble(parts[1]));
 
-                            mTextViewResult.setText(myResponse);
-                        }
-                    });
                 }
             }
         });
-
-        Crosshairs myCross = new Crosshairs(anyChartView);
-
     }
+    void setAngles(double x, double y){
+        String url = baseUrl + "setAngles=" + Double.toString(x) + "_" + Double.toString(y);
+        Request request = new Request.Builder()
+                .url(url)
+                .build();
+        client.newCall(request).enqueue(new Callback() {
+            @Override
+            public void onFailure(Call call, IOException e) {
+                e.printStackTrace();
+            }
 
-    private class Crosshairs {
-        private List<DataEntry> myData = new ArrayList<>();
-        Scatter scatter;
-        AnyChartView myView;
-        public void drawCrosshairs(AnyChartView myView){
-
-        }
-        public void changeCoordinate(double x, double y){
-            myData.remove(0);
-            myData.add(new ValueDataEntry(x,y));
-        }
-        public Crosshairs(AnyChartView View) {
-            myView = View;
-            myData.add(new ValueDataEntry(0.0,0.0));
-            scatter = AnyChart.scatter();
-            scatter.animation(true);
-            scatter.title("Zielen und Vorwärts");
-            scatter.xScale()
-                    .minimum(-1d)
-                    .maximum(1d);
-            scatter.yScale()
-                    .minimum(-1d)
-                    .maximum(1d);
-            scatter.tooltip().displayMode(TooltipDisplayMode.UNION);
-            Marker marker = scatter.marker(myData);
-            marker.type(MarkerType.CIRCLE)
-                    .size(8d);
-            myView.circle(300, 150, 70);
-            myView.setChart(scatter);
-            myView.bringToFront();
-
-
-
-        }
-
+            @Override
+            public void onResponse(Call call, Response response) throws IOException {
+                if (response.isSuccessful()) {
+                    final String myResponse = response.body().string();
+                }
+            }
+        });
     }
-
-    private class HttpHandler {
-
-    }
-
-
 }
