@@ -15,5 +15,7 @@ const uint8_t DRILL_ANGLE_OFFSET = 8; // 8 deg
 
 const float ANGLE_DISPLACEMENT = 10.0;
 
+const uint32_t debounce(20); // 20 ms debounce time to prevent flickerining
+
 
 #endif
