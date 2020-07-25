@@ -219,6 +219,7 @@ void Init() {
     Serial.println(wallNormal.z());
 }
 
+
 void getCartesian(double* angles, double* vecToRotate, double* cartesian) {
     double rotMat[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
     getRot(angles, (double*)rotMat);
