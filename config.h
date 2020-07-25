@@ -1,21 +1,19 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+#define CURRENT_SENSE_PIN A1
+
 const uint8_t INTERRUPT_PIN = 2;
+const uint32_t debounce(20); // 20 ms debounce time to prevent flickerining
+
 const uint8_t LED_UP = 10;
 const uint8_t LED_RIGHT = 9;
 const uint8_t LED_DOWN = 6;
 const uint8_t LED_LEFT = 5;
 
-
+// Motorcontrol
 const uint8_t MOTOR_SPEED_PIN = 3;
-const uint8_t MOTOR_BACK_DIR_PIN = 4;
-const uint8_t MOTOR_FOR_DIR_PIN = 5;
-const uint8_t DRILL_ANGLE_OFFSET = 8; // 8 deg
 
-const float ANGLE_DISPLACEMENT = 10.0;
-
-const uint32_t debounce(20); // 20 ms debounce time to prevent flickerining
-
+const float ANGLE_DISPLACEMENT(8.0); // offset of the drilling axis to the buttom plate
 
 #endif
