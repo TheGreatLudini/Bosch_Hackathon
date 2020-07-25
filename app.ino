@@ -5,9 +5,12 @@
 #include <utility/imumaths.h>
 
 #include "config.h"
-// #include "Motor.h"
+//#include "Motor.h"
     
 // #define DEBUG_LOCAL_VECTOR
+// #define DEBUG_MISSALIGN
+// #define DEBUG_MOTOR
+#define DEBUG_TOTAL_ERROR
 #define DEBUG_ERROR_DIR
 //#define DEBUG_MISSALIGN
 
@@ -49,6 +52,8 @@ void setup(void)
     pinMode(LED_DOWN, OUTPUT);
     pinMode(LED_LEFT, OUTPUT);
 
+    pinMode(MOTOR_SPEED_PIN, OUTPUT);
+
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), setAngle, FALLING);
     Serial.println("Setup done");
 }
@@ -85,6 +90,20 @@ void loop(void)
 
     // LED on if the drilling angle is correct
     digitalWrite(LED_BUILTIN, abs(localLeftRightError) < ANGLE_DISPLACEMENT && abs(localUpDownError) < ANGLE_DISPLACEMENT);
+
+    double localErrorTotal = sqrt(pow(localUpDownError, 2) + pow(localLeftRightError, 2));
+    uint8_t motorSpeed(0);
+    if (localErrorTotal < MOTOR_ON_THESHOLD) {
+        localErrorTotal = localErrorTotal * 100 / 30 * 255;
+        motorSpeed = 255 - localErrorTotal;
+    }
+    analogWrite(MOTOR_SPEED_PIN, motorSpeed);
+    
+
+    #ifdef DEBUG_MOTOR
+    Serial.print("Motor Speed: ");
+    Serial.println(motorSpeed);
+    #endif
 
     
     if (localUpDownError >= 0) {
@@ -131,19 +150,23 @@ void loop(void)
     Serial.print("\tZ: ");
     Serial.println(zLocal.z());
     #endif
-    delay(100);
+    //delay(100);
 
 
 }
 
 void setAngle()
 {
-    if (interruptCounter == 0 && abs(millis() - interruptTime) > 1000) {
+    if (abs(millis() - interruptTime) > 500) {
+        interruptCounter = 0;
+    }
+    if (interruptCounter == 0) {
         interruptCounter++;
         preciceInitialize = true;
         initGuard = true;
     } else if (abs(millis() - interruptTime) > debounce) {
         interruptCounter = 0;
+        preciceInitialize = false;
         initialize = true;
     }
 
@@ -155,7 +178,7 @@ void setAngle()
  * initializes the Wall coordinates assuming the drill
  * is hold against a wall
  */
-void preciceInitialize() {
+void preciceInit() {
     preciceInitialize = false;
     imu::Quaternion quat = bno.getQuat();
     imu::Vector<3> Xvector(1.0, 0, 0);
@@ -181,7 +204,6 @@ void preciceInitialize() {
  */
 void Init() {
     initialize = false;
-    preciceInitialize = false;
     imu::Quaternion quat = bno.getQuat();
     imu::Vector<3> Xvector(1.0, 0, 0);
     imu::Vector<3> Yvector(0, 1.0, 0);
@@ -196,6 +218,7 @@ void Init() {
     Serial.print("\tZ: ");
     Serial.println(wallNormal.z());
 }
+
 
 void getCartesian(double* angles, double* vecToRotate, double* cartesian) {
     double rotMat[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};

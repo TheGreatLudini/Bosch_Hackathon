@@ -13,6 +13,14 @@ const uint8_t LED_LEFT = 5;
 
 // Motorcontrol
 const uint8_t MOTOR_SPEED_PIN = 3;
+const uint8_t MOTOR_BACK_DIR_PIN = 4;
+const uint8_t MOTOR_FOR_DIR_PIN = 5;
+const uint8_t DRILL_ANGLE_OFFSET = 8; // 8 deg
+const double MOTOR_ON_THESHOLD(0.3);
+
+const float ANGLE_DISPLACEMENT = 10.0;
+
+const uint32_t debounce(10); // 20 ms debounce time to prevent flickerining
 
 const float ANGLE_DISPLACEMENT(8.0); // offset of the drilling axis to the buttom plate
 
