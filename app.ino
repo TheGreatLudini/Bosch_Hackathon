@@ -2,6 +2,9 @@
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
+#include <SPI.h>
+#include <WiFiNINA.h>
+#include "arduino_secrets.h" 
 
 #include "config.h"
 // #include "Motor.h"
@@ -14,6 +17,13 @@ Adafruit_BNO055 bno = Adafruit_BNO055(55);
 imu::Vector<3> wallNormal(0.0, 0.0, 0.0);
 imu::Vector<3> wall_X(0.0, 0.0, 0.0);
 imu::Vector<3> wall_Y(0.0, 0.0, 0.0);
+
+char ssid[] = SECRET_SSID;        // your network SSID (name)
+char pass[] = SECRET_PASS;    // your network password (use for WPA, or use as key for WEP)
+int keyIndex = 0;                // your network key Index number (needed only for WEP)
+
+int status = WL_IDLE_STATUS;
+WiFiServer server(80);
 
 bool initialize = false;
 
