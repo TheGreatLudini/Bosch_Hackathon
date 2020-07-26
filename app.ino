@@ -16,6 +16,9 @@
 
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
+Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
+const uint32_t GREEN = strip.Color(0, 255, 0);
+const uint32_t RED = strip.Color(255, 0, 0);
 
 imu::Vector<3> wallNormal(0.0, 0.0, 0.0);
 imu::Vector<3> wall_X(0.0, 0.0, 0.0);
@@ -35,7 +38,13 @@ void setup(void)
 {
     Serial.begin(9600);
     Serial.println("Orientation Sensor Test"); Serial.println("");
-    
+
+    //init LEDs
+    strip.begin();
+	strip.fill(RED, 0, LED_COUNT);
+	strip.setBrightness(20);
+	strip.show();
+
     /* Initialise the sensor */
     if(!bno.begin())
     {
@@ -55,10 +64,6 @@ void setup(void)
     #endif
 
     pinMode(LED_BUILTIN, OUTPUT);
-    pinMode(LED_UP, OUTPUT);
-    pinMode(LED_RIGHT, OUTPUT);
-    pinMode(LED_DOWN, OUTPUT);
-    pinMode(LED_LEFT, OUTPUT);
     pinMode(CURRENT_SENSE_PIN, INPUT);
     pinMode(MOTOR_SPEED_PIN, OUTPUT);
 
@@ -118,18 +123,18 @@ void loop(void)
 
     
     if (localUpDownError >= 0) {
-        analogWrite(LED_UP, localUpDownError * 255);
-        analogWrite(LED_DOWN, 0);
+        strip.setPixelColor(LedUp, 0, localUpDownError * 255, 0);
+        strip.setPixelColor(LedDown, 0);
     } else {
-        analogWrite(LED_DOWN, -(localUpDownError * 255));
-        analogWrite(LED_UP, 0);
+        strip.setPixelColor(LedDown, 0, localUpDownError * 255, 0);
+        strip.setPixelColor(LedUp, 0);
     }
     if (localLeftRightError >= 0) {
-        analogWrite(LED_LEFT, localLeftRightError * 255);
-        analogWrite(LED_RIGHT, 0);
+        strip.setPixelColor(LedLeft, 0, localUpDownError * 255, 0);
+        strip.setPixelColor(LedRight, 0);
     } else {
-        analogWrite(LED_RIGHT, -(localLeftRightError * 255));
-        analogWrite(LED_LEFT, 0);
+        strip.setPixelColor(LedRight, 0, localUpDownError * 255, 0);
+        strip.setPixelColor(LedLeft, 0);
     }
     
 

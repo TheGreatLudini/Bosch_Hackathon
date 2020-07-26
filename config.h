@@ -1,5 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
+#include <Adafruit_NeoPixel.h>
+
 
 #if defined(ARDUINO_AVR_NANO)       
     #define BOARD_NANO
@@ -11,10 +13,17 @@
 
 const uint8_t INTERRUPT_PIN = 2;
 
-const uint8_t LED_UP = 10;
-const uint8_t LED_RIGHT = 9;
-const uint8_t LED_DOWN = 6;
-const uint8_t LED_LEFT = 5;
+//LEDStuff
+const uint8_t LED_PIN(11);
+const uint8_t LED_COUNT(5);
+enum Leds : uint8_t {
+    LedCenter,
+    LedRight,
+    LedDown,
+    LedLeft,
+    LedUp
+};
+
 
 // Motorcontrol
 const uint8_t MOTOR_SPEED_PIN = 3;
@@ -34,4 +43,12 @@ const uint32_t debounce(10); // 20 ms debounce time to prevent flickerining
 
 const float ANGLE_DISPLACEMENT(8.0); // offset of the drilling axis to the buttom plate
 
+//Functions
+void setAngle();
+double CurrentMeasurment();
+void preciceInit();
+void Init();
+void getCartesian(double* angles, double* vecToRotate, double* cartesian);
+void getRot(double* angles, double* rotMat);
+void matrixMultip(double* matA, double* matB, double* matResult, int m, int p, int q, int n);
 #endif
