@@ -214,9 +214,8 @@ void setLeds(double localLeftRightError, double localUpDownError, double localEr
         strip.setPixelColor(LedRight, 0, localUpDownError * 255, 0);
         strip.setPixelColor(LedLeft, BLACK);
     }
-    if (localErrorTotal < STRAIT_THRESHOLD) {
-        strip.setPixelColor(LedCenter, 0, 255, 0);
-        strip.fill(BLACK, 1, 4);
+    if (localErrorTotal < CENTER_LED_ON_THESHOLD) {
+        strip.setPixelColor(LedCenter, 0, (CENTER_LED_ON_THESHOLD - localErrorTotal) * 255, 0);
     } else {
         strip.setPixelColor(LedCenter, BLACK);
     }
@@ -274,12 +273,12 @@ void Init() {
  * Rotates the Drilling direction in relation to the Wall coordinates
  * 
  * @param angle Rotagion angle in degree
- * @param rotVector the rotation axis of the rotation
+ * @param rotAxis the rotation axis of the rotation
  */
-void RotDrillDir(double angle, imu::Vector<3> rotVector) {
+imu::Vector<3> RotDir(double angle, imu::Vector<3> rotAxis, imu::Vector<3> VecToRotate) {
     double phi = angle / 180 * 3.1416;
     imu::Quaternion rotQuat(cos(phi / 2), wall_Y.scale(sin(phi / 2)));
-    drillDir = rotQuat.rotateVector(drillDir);
+    return rotQuat.rotateVector(VecToRotate);
 }
 
 /**
@@ -352,11 +351,11 @@ void loopBLE(){
 
     // if a central is connected to the peripheral:
     if (central) {
-        #ifdef DEBUG_BLE
-        Serial.print("Connected to central: ");
-        // print the central's BT address:
-        Serial.println(central.address());
-        #endif
+        // #ifdef DEBUG_BLE
+        // Serial.print("Connected to central: ");
+        // // print the central's BT address:
+        // Serial.println(central.address());
+        // #endif
         if(CalibrateChar.written()) {
             preciceInit();
         }
@@ -392,8 +391,8 @@ void loopBLE(){
         }
         if (newDrillAngle) {
             drillDir = wallNormal;
-            RotDrillDir(LR, wall_X);
-            RotDrillDir(UD, wall_Y);
+            drillDir = RotDir(LR, wall_X, drillDir);
+            drillDir = RotDir(UD, wall_Y, drillDir);
         }
 
         SendScalarUD.writeValue((float)localUpDownError);

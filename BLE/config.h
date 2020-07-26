@@ -24,9 +24,9 @@ enum Leds : uint8_t {
 
 // Motorcontrol
 const uint8_t MOTOR_SPEED_PIN = 6;
-const float STRAIT_THRESHOLD(0.1); // 5°C
 const float ANGLE_DISPLACEMENT(8.0); // offset of the drilling axis to the buttom plate
 const double MOTOR_ON_THESHOLD(0.3);
+const double CENTER_LED_ON_THESHOLD(0.15);
 
 // Current measurement
 #define CURRENT_SENSE_PIN A6
@@ -45,8 +45,7 @@ double CurrentMeasurment();
 void setLeds(double localLeftRightError, double localUpDownError, double localErrorTotal);
 void preciceInit();
 void Init();
-void getCartesian(double* angles, double* vecToRotate, double* cartesian);
-void getRot(double* angles, double* rotMat);
+imu::Vector<3> RotDir(double angle, imu::Vector<3> rotAxis, imu::Vector<3> VecToRotate);
 void matrixMultip(double* matA, double* matB, double* matResult, int m, int p, int q, int n);
 unsigned int encodeValue(double leftRight, double upDown);
 // BLE Battery Service
