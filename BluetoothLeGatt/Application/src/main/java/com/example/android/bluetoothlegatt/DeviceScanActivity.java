@@ -157,24 +157,14 @@ public class DeviceScanActivity extends ListActivity {
     }
 
     private void scanLeDevice(final boolean enable) {
-        if (enable) {
-            // Stops scanning after a pre-defined scan period.
-            mHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    mScanning = false;
-                    mBluetoothAdapter.stopLeScan(mLeScanCallback);
-                    invalidateOptionsMenu();
-                }
-            }, SCAN_PERIOD);
-
-            mScanning = true;
-            mBluetoothAdapter.startLeScan(mLeScanCallback);
-        } else {
-            mScanning = false;
+        final Intent intent = new Intent(this, DeviceControlActivity.class);
+        intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_NAME, "Schraubenmaster4000");
+        intent.putExtra(DeviceControlActivity.EXTRAS_DEVICE_ADDRESS, "4C:11:AE:C8:5A:B2");
+        if (mScanning) {
             mBluetoothAdapter.stopLeScan(mLeScanCallback);
+            mScanning = false;
         }
-        invalidateOptionsMenu();
+        startActivity(intent);
     }
 
     // Adapter for holding devices found through scanning.

@@ -13,11 +13,19 @@ import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Binder;
+import android.os.Handler;
 import android.os.IBinder;
+import android.os.Looper;
 import android.util.Log;
 
+import java.nio.ByteOrder;
 import java.util.List;
 import java.util.UUID;
+import java.nio.ByteBuffer;
+
+import static android.bluetooth.BluetoothDevice.BOND_BONDED;
+import static android.bluetooth.BluetoothDevice.BOND_BONDING;
+import static android.bluetooth.BluetoothDevice.BOND_NONE;
 
 public class BLEService extends Service {
     private final static String TAG = BLEService.class.getSimpleName();
@@ -25,6 +33,7 @@ public class BLEService extends Service {
     private BluetoothManager bluetoothManager;
     private BluetoothAdapter bluetoothAdapter;
     private BluetoothGatt bluetoothGatt;
+    private BluetoothDevice device;
     private String bluetoothDeviceAddress;
     private int mConnectionState = STATE_DISCONNECTED;
 
@@ -58,8 +67,31 @@ public class BLEService extends Service {
                 broadcastUpdate(intentAction);
                 Log.i(TAG, "Connected to GATT server.");
                 // Attempts to discover services after successful connection.
-                Log.i(TAG, "Attempting to start service discovery:" +
-                        bluetoothGatt.discoverServices());
+                if (status == bluetoothGatt.GATT_SUCCESS) {
+                    int bondstate = device.getBondState();
+                    if (bondstate == BOND_NONE || bondstate == BOND_BONDED) {
+                        final int delay = bondstate == BOND_BONDED ? 1000 : 2000;
+                        final Handler handler = new Handler(Looper.getMainLooper());
+                        handler.postDelayed(new Runnable() {
+                            @Override
+                            public void run() {
+                                Log.i(TAG, "We will run the service discovery after ." + delay);
+                                boolean result = bluetoothGatt.discoverServices();
+                                if (!result) {
+                                    Log.e(TAG, "DiscoverServices failed to start");
+                                }
+                            }
+                        }, delay);
+                        //Log.i(TAG, "Attempting to start service discovery:" +
+                        //bluetoothGatt.discoverServices());
+                    } else if (bondstate == BOND_BONDING) {
+                        Log.i(TAG, "Waiting for bonding to complete");
+                    }
+                } else {
+                    Log.i(TAG,"Not a success");
+                }
+
+
 
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 intentAction = ACTION_GATT_DISCONNECTED;
@@ -70,7 +102,9 @@ public class BLEService extends Service {
         }
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
+            Log.i(TAG, "Found some services, discovered");
             if (status == BluetoothGatt.GATT_SUCCESS) {
+                Log.i(TAG, "Status is success");
                 broadcastUpdate(ACTION_GATT_SERVICES_DISCOVERED);
             } else {
                 Log.w(TAG, "onServicesDiscovered received: " + status);
@@ -81,6 +115,7 @@ public class BLEService extends Service {
         public void onCharacteristicRead(BluetoothGatt gatt,
                                          BluetoothGattCharacteristic characteristic,
                                          int status) {
+            Log.i(TAG, "We read a characteristic");
             if (status == BluetoothGatt.GATT_SUCCESS) {
                 broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
             }
@@ -89,12 +124,14 @@ public class BLEService extends Service {
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt,
                                             BluetoothGattCharacteristic characteristic) {
+            Log.i(TAG, "A characteristic was changed");
             broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
         }
     };
 
     private void broadcastUpdate(final String action) {
         final Intent intent = new Intent(action);
+        Log.i(TAG, "We send a broadcast.");
         sendBroadcast(intent);
     }
 
@@ -106,16 +143,16 @@ public class BLEService extends Service {
 
         // Writes the data formatted in HEX.
         final byte[] data = characteristic.getValue();
-        if (data != null && data.length > 0) {
+        int flag = characteristic.getProperties();
+        float dataAsFloat = ByteBuffer.wrap(data).order(ByteOrder.LITTLE_ENDIAN).getFloat();
+        /*if (data != null && data.length > 0) {
             final StringBuilder stringBuilder = new StringBuilder(data.length);
             for(byte byteChar : data)
                 stringBuilder.append(String.format("%02X ", byteChar));
                 intent.putExtra(EXTRA_DATA, new String(data) + "\n" + stringBuilder.toString());
-            }
+            }*/
+        intent.putExtra(EXTRA_DATA, dataAsFloat + "");
         sendBroadcast(intent);
-    }
-
-    public BLEService() {
     }
 
     public class LocalBinder extends Binder {
@@ -193,7 +230,7 @@ public class BLEService extends Service {
             }
         }
 
-        final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
+        device = bluetoothAdapter.getRemoteDevice(address);
         if (device == null) {
             Log.w(TAG, "Device not found.  Unable to connect.");
             return false;
@@ -278,8 +315,14 @@ public class BLEService extends Service {
      * @return A {@code List} of supported services.
      */
     public List<BluetoothGattService> getSupportedGattServices() {
+        Log.i(TAG, "We are here");
         if (bluetoothGatt == null) return null;
 
         return bluetoothGatt.getServices();
+    }
+
+    @Override
+    public void onCreate() {
+        Log.i(TAG, "Service created");
     }
 }

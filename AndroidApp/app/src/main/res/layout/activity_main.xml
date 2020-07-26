@@ -16,11 +16,11 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <Button
-        android:id="@+id/scanButton"
+        android:id="@+id/connectButton"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:onClick="scanForDevices"
-        android:text="Scan"
+        android:onClick="connectArduino"
+        android:text="Connect Arduino"
         tools:layout_editor_absoluteX="84dp"
         tools:layout_editor_absoluteY="48dp" />
 
