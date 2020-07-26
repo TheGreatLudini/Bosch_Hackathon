@@ -24,6 +24,7 @@ enum Leds : uint8_t {
 
 // Motorcontrol
 const uint8_t MOTOR_SPEED_PIN = 6;
+const float STRAIT_THRESHOLD(0.1); // 5°C
 const float ANGLE_DISPLACEMENT(8.0); // offset of the drilling axis to the buttom plate
 const double MOTOR_ON_THESHOLD(0.3);
 
@@ -41,6 +42,7 @@ const uint32_t debounce(10); // 20 ms debounce time to prevent flickerining
 //Functions
 void setAngle();
 double CurrentMeasurment();
+void setLeds(double localLeftRightError, double localUpDownError, double localErrorTotal);
 void preciceInit();
 void Init();
 void getCartesian(double* angles, double* vecToRotate, double* cartesian);
@@ -54,8 +56,5 @@ BLEService angleService("Angle_service");
 BLEUnsignedIntCharacteristic SetAngleChar("SetAngleChar", BLERead | BLEWrite);
 BLEUnsignedIntCharacteristic GetAngleChar("GetAngleChar", BLERead);
 BLEUnsignedIntCharacteristic CalibrateChar("CalibrateChar", BLERead | BLENotify);
-
-
-
 
 #endif

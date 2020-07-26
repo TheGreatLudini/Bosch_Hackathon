@@ -10,18 +10,19 @@
 //#include "Motor.h"
     
 // #define DEBUG_LOCAL_VECTOR
-// #define DEBUG_MISSALIGN
 // #define DEBUG_MOTOR
 //#define DEBUG_TOTAL_ERROR
-//#define DEBUG_ERROR_DIR
-//#define DEBUG_MISSALIGN
-#define DEBUG_BLE
+#define DEBUG_ERROR_DIR
+//#define DEBUG_CURRENT
+
+//#define DEBUG_BLE
 
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
 const uint32_t GREEN = strip.Color(0, 255, 0);
 const uint32_t RED = strip.Color(255, 0, 0);
+const uint32_t BLACK = strip.Color(0, 0, 0);
 
 imu::Vector<3> wallNormal(0.0, 0.0, 0.0);
 imu::Vector<3> wall_X(0.0, 0.0, 0.0);
@@ -45,7 +46,7 @@ void setup()
     //init LEDs
     strip.begin();
 	strip.fill(RED, 0, LED_COUNT);
-	strip.setBrightness(20);
+	strip.setBrightness(50);
 	strip.show();
 
     while(!Serial){
@@ -91,9 +92,6 @@ void loop(void)
     
     loopBLE();
     // The current orientation of the screw driver is stored as a quaternion in "quat":
-    imu::Quaternion quat = bno.getQuat();
-    imu::Vector<3> vectorToRotate(1.0, 0, 0);
-    imu::Vector<3> rotatedVector = quat.rotateVector(vectorToRotate);
 
     if (!initGuard) {
         if (preciceInitialize) {
@@ -104,7 +102,7 @@ void loop(void)
     } else if (abs(millis() - interruptTime) > 2 * debounce) {
         initGuard = false;
     }
-
+    imu::Quaternion quat = bno.getQuat();
     imu::Vector<3> xGlobal(1.0, 0.0, 0.0);
     imu::Vector<3> yGlobal(0.0, 1.0, 0.0);
     imu::Vector<3> zGlobal(0.0, 0.0, 1.0);
@@ -119,15 +117,15 @@ void loop(void)
     double localUpDownError = wallNormal.dot(zLocal);
 
     // LED on if the drilling angle is correct
-    
 
     double localErrorTotal = sqrt(pow(localUpDownError, 2) + pow(localLeftRightError, 2));
     uint8_t motorSpeed(0);
     if (localErrorTotal < MOTOR_ON_THESHOLD) {
-        localErrorTotal = localErrorTotal * 100 / 30 * 255;
-        motorSpeed = 255 - localErrorTotal;
+        motorSpeed = 255 - (localErrorTotal * 100 / 30 * 255);
     }
     analogWrite(MOTOR_SPEED_PIN, motorSpeed);
+
+    setLeds(localLeftRightError, localUpDownError, localErrorTotal);
     
 
     #ifdef DEBUG_MOTOR
@@ -135,34 +133,10 @@ void loop(void)
     Serial.println(motorSpeed);
     #endif
 
-    
-    if (localUpDownError >= 0) {
-        strip.setPixelColor(LedUp, 0, localUpDownError * 255, 0);
-        strip.setPixelColor(LedDown, 0);
-    } else {
-        strip.setPixelColor(LedDown, 0, localUpDownError * 255, 0);
-        strip.setPixelColor(LedUp, 0);
-    }
-    if (localLeftRightError >= 0) {
-        strip.setPixelColor(LedLeft, 0, localUpDownError * 255, 0);
-        strip.setPixelColor(LedRight, 0);
-    } else {
-        strip.setPixelColor(LedRight, 0, localUpDownError * 255, 0);
-        strip.setPixelColor(LedLeft, 0);
-    }
-    
-
     #ifdef DEBUG_ERROR_DIR
     Serial.print("LR_Error: ");
     Serial.print(localLeftRightError);
     Serial.print("\tUD_Error: ");
-    Serial.println(localUpDownError);
-    #endif
-
-    #ifdef DEBUG_MISSALIGN
-    Serial.print("Missaligment Left: ");
-    Serial.print(localLeftRightError);
-    Serial.print("\tDOWN: ");
     Serial.println(localUpDownError);
     #endif
 
@@ -212,7 +186,36 @@ double CurrentMeasurment() {
     }
     motorCurrent = motorCurrent / FILTERLENGTH;
     counter++;
+    #ifdef DEBUG_CURRENT
+        Serial.print("T :");
+        Serial.println(motorCurrent);
+    #endif
     return motorCurrent;
+
+}
+
+void setLeds(double localLeftRightError, double localUpDownError, double localErrorTotal) {
+    if (localUpDownError >= 0) {
+        strip.setPixelColor(LedUp, 0, localUpDownError * 255, 0);
+        strip.setPixelColor(LedDown, BLACK);
+    } else {
+        strip.setPixelColor(LedDown, 0, localUpDownError * 255, 0);
+        strip.setPixelColor(LedUp, BLACK);
+    }
+    if (localLeftRightError >= 0) {
+        strip.setPixelColor(LedLeft, 0, localUpDownError * 255, 0);
+        strip.setPixelColor(LedRight, BLACK);
+    } else {
+        strip.setPixelColor(LedRight, 0, localUpDownError * 255, 0);
+        strip.setPixelColor(LedLeft, BLACK);
+    }
+    if (localErrorTotal < STRAIT_THRESHOLD) {
+        strip.setPixelColor(LedCenter, 0, 255, 0);
+        strip.fill(BLACK, 1, 4);
+    } else {
+        strip.setPixelColor(LedCenter, BLACK);
+    }
+    strip.show();
 }
 
 /**
@@ -355,16 +358,14 @@ void loopBLE(){
         String zw = String(SetAngleChar.value());
         String zw1 = zw.substring(0,5);
         String zw2 = zw.substring(5,10);
-        if(zw1.substring(0,1) == "1"){
+        if(zw1.substring(0,1) == "1") {
             int x = -(zw1.substring(1).toInt());
-        } else
-        {
+        } else {
             int x = zw1.substring(1).toInt();
         }
-        if(zw2.substring(0,1) == "1"){
+        if(zw2.substring(0,1) == "1") {
             int y = -(zw2.substring(1).toInt());
-        } else
-        {
+        } else {
             int y = zw2.substring(1).toInt();
         }   
     }
