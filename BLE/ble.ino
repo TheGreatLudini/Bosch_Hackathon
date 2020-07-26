@@ -228,7 +228,7 @@ void preciceInit() {
     wallNormal = quat.rotateVector(Zvector);
     wall_Y = quat.rotateVector(Yvector);
     wall_X = quat.rotateVector(Xvector);
-    double phi = DRILL_ANGLE_OFFSET / 180 * 3.1416;
+    double phi = ANGLE_DISPLACEMENT / 180 * 3.1416;
     imu::Quaternion rotQuat(cos(phi / 2), wall_Y.scale(sin(phi / 2)));
     wallNormal = rotQuat.rotateVector(wallNormal);
     Serial.print("X: ");
