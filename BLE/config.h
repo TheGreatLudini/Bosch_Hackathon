@@ -9,10 +9,11 @@
 #else
     const float REF_VOLTAGE(3.3);
 #endif
-
-
 const uint8_t INTERRUPT_PIN = 2;
-
+const uint8_t LED_UP = 10;
+const uint8_t LED_RIGHT = 9;
+const uint8_t LED_DOWN = 6;
+const uint8_t LED_LEFT = 5;
 //LEDStuff
 const uint8_t LED_PIN(11);
 const uint8_t LED_COUNT(5);
@@ -23,7 +24,6 @@ enum Leds : uint8_t {
     LedLeft,
     LedUp
 };
-
 
 // Motorcontrol
 const uint8_t MOTOR_SPEED_PIN = 3;
@@ -51,4 +51,16 @@ void Init();
 void getCartesian(double* angles, double* vecToRotate, double* cartesian);
 void getRot(double* angles, double* rotMat);
 void matrixMultip(double* matA, double* matB, double* matResult, int m, int p, int q, int n);
+
+// BLE Battery Service
+BLEService angleService("Angle_service");
+
+// BLE Battery Level Characteristic
+BLEUnsignedIntCharacteristic SetAngleChar("SetAngleChar", BLERead | BLEWrite);
+BLEUnsignedIntCharacteristic GetAngleChar("GetAngleChar", BLERead);
+BLEUnsignedIntCharacteristic CalibrateChar("CalibrateChar", BLERead | BLENotify);
+
+
+
+
 #endif
