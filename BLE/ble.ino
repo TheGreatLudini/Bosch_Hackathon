@@ -12,10 +12,10 @@
 // #define DEBUG_LOCAL_VECTOR
 // #define DEBUG_MOTOR
 //#define DEBUG_TOTAL_ERROR
-#define DEBUG_ERROR_DIR
+//#define DEBUG_ERROR_DIR
 //#define DEBUG_CURRENT
 
-//#define DEBUG_BLE
+#define DEBUG_BLE
 
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
@@ -24,6 +24,7 @@ const uint32_t GREEN = strip.Color(0, 255, 0);
 const uint32_t RED = strip.Color(255, 0, 0);
 const uint32_t BLACK = strip.Color(0, 0, 0);
 
+imu::Vector<3> drillDir(0.0, 0.0, 0.0);
 imu::Vector<3> wallNormal(0.0, 0.0, 0.0);
 imu::Vector<3> wall_X(0.0, 0.0, 0.0);
 imu::Vector<3> wall_Y(0.0, 0.0, 0.0);
@@ -36,10 +37,12 @@ uint8_t interruptCounter(0);
 double motorCurrentHistory[FILTERLENGTH]; 
 uint32_t counter;
 
+double localLeftRightError;
+double localUpDownError;
+
 //Motor myMotor = new Motor(MOTOR_FOR_DIR_PIN, MOTOR_BACK_DIR_PIN, MOTOR_SPEED_PIN);
     
-void setup() 
-{
+void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     Serial.begin(9600);
 
@@ -49,9 +52,9 @@ void setup()
 	strip.setBrightness(50);
 	strip.show();
 
-    while(!Serial){
-        delay(1);
-    }
+    // while(!Serial){
+    //     delay(1);
+    // }
     Serial.println("Orientation Sensor Test"); 
     Serial.println("");
 
@@ -90,9 +93,10 @@ void loop(void)
 {   
     double motorCurrent = CurrentMeasurment();
     
-    loopBLE();
-    // The current orientation of the screw driver is stored as a quaternion in "quat":
+    loopBLE(); 
 
+    // -------------------
+    // handel Initializations if those are set in the set angle interrupt
     if (!initGuard) {
         if (preciceInitialize) {
             preciceInit();
@@ -102,6 +106,8 @@ void loop(void)
     } else if (abs(millis() - interruptTime) > 2 * debounce) {
         initGuard = false;
     }
+    // -------------------
+    // calculate misalignment/errors
     imu::Quaternion quat = bno.getQuat();
     imu::Vector<3> xGlobal(1.0, 0.0, 0.0);
     imu::Vector<3> yGlobal(0.0, 1.0, 0.0);
@@ -113,12 +119,12 @@ void loop(void)
 
     // Angle error in up-down- and left-right-direction, determined via the dot product
     // If the dot product is 0, the respective axis is orthogonal to the wall normal, therefore good
-    double localLeftRightError = wallNormal.dot(yLocal);
-    double localUpDownError = wallNormal.dot(zLocal);
-
-    // LED on if the drilling angle is correct
-
+    localLeftRightError = drillDir.dot(yLocal);
+    localUpDownError = drillDir.dot(zLocal);
     double localErrorTotal = sqrt(pow(localUpDownError, 2) + pow(localLeftRightError, 2));
+
+    // -------------------
+    // set Leds and Motorspeed acording to misalignment
     uint8_t motorSpeed(0);
     if (localErrorTotal < MOTOR_ON_THESHOLD) {
         motorSpeed = 255 - (localErrorTotal * 100 / 30 * 255);
@@ -127,7 +133,8 @@ void loop(void)
 
     setLeds(localLeftRightError, localUpDownError, localErrorTotal);
     
-
+    // -------------------
+    // Debug outputs
     #ifdef DEBUG_MOTOR
     Serial.print("Motor Speed: ");
     Serial.println(motorSpeed);
@@ -155,8 +162,6 @@ void loop(void)
     Serial.println(zLocal.z());
     #endif
     //delay(100);
-
-
 }
 
 void setAngle()
@@ -240,6 +245,7 @@ void preciceInit() {
     Serial.print(wallNormal.y());
     Serial.print("\tZ: ");
     Serial.println(wallNormal.z());
+    drillDir = wallNormal;
 }
 
 /**
@@ -253,6 +259,7 @@ void Init() {
     imu::Vector<3> Yvector(0, 1.0, 0);
     imu::Vector<3> Zvector(0, 0, 1.0);
     wallNormal = quat.rotateVector(Xvector);
+    drillDir = wallNormal;
     wall_Y = quat.rotateVector(Zvector);
     wall_X = quat.rotateVector(Yvector);
     Serial.print("X: ");
@@ -263,26 +270,17 @@ void Init() {
     Serial.println(wallNormal.z());
 }
 
-void getCartesian(double* angles, double* vecToRotate, double* cartesian) {
-    double rotMat[3][3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
-    getRot(angles, (double*)rotMat);
-    matrixMultip((double*)rotMat, vecToRotate, cartesian, 3, 3, 3, 1);
-}
-
 /**
- * conversion of euler values to cartesian with XYZ cnvention
+ * Rotates the Drilling direction in relation to the Wall coordinates
+ * 
+ * @param angle Rotagion angle in degree
+ * @param rotVector the rotation axis of the rotation
  */
-void getRot(double* angles, double* rotMat) {
-    rotMat[0] = cos(angles[1]) * cos(angles[2]);
-    rotMat[1] = cos(angles[0]) * sin(angles[2]) + cos(angles[2]) * sin(angles[0]) * sin(angles[1]);
-    rotMat[2] = sin(angles[0]) * sin(angles[2]) - cos(angles[0]) * cos(angles[2]) * sin(angles[1]);
-    rotMat[3] = -cos(angles[1]) * sin(angles[2]);
-    rotMat[4] = cos(angles[0]) * cos(angles[2]) - sin(angles[0]) * sin(angles[1]) * sin(angles[2]);
-    rotMat[5] = sin(angles[0]) * cos(angles[2]) + cos(angles[0]) * sin(angles[1]) * sin(angles[2]);
-    rotMat[6] = sin(angles[1]);
-    rotMat[7] = -cos(angles[1]) * sin(angles[0]);
-    rotMat[8] = cos(angles[0]) * cos(angles[1]);
-} 
+void RotDrillDir(double angle, imu::Vector<3> rotVector) {
+    double phi = angle / 180 * 3.1416;
+    imu::Quaternion rotQuat(cos(phi / 2), wall_Y.scale(sin(phi / 2)));
+    drillDir = rotQuat.rotateVector(drillDir);
+}
 
 /**
  * Multiplies two matrices with arbitrary dimensions
@@ -306,8 +304,6 @@ void matrixMultip(double* matA, double* matB, double* matResult, int m, int p, i
     }
 }
 
-
-
 void initBLE(){
 
     // begin initialization
@@ -323,17 +319,23 @@ void initBLE(){
     */
     BLE.setLocalName("Schraubenmaster4000");
     Serial.println("BLE name set");
+    Serial.println(BLE.address());
+
 
     BLE.setAdvertisedService(angleService); // add the service UUID
 
-    angleService.addCharacteristic(SetAngleChar); // add the battery level characteristic
-    angleService.addCharacteristic(GetAngleChar); // add the battery level characteristic
+    angleService.addCharacteristic(SetAngleCharLR); // add the battery level characteristic
+    angleService.addCharacteristic(SetAngleCharUD); // add the battery level characteristic
+    angleService.addCharacteristic(SendScalarUD); // add the battery level characteristic
+    angleService.addCharacteristic(SendScalarLR); // add the battery level characteristic
     angleService.addCharacteristic(CalibrateChar); // add the battery level characteristic
 
     BLE.addService(angleService); // Add the battery service
 
-    SetAngleChar.writeValue(1111111111); // set initial value for this characteristic
-    GetAngleChar.writeValue(1111111111); // set initial value for this characteristic
+    SetAngleCharLR.writeValue(1111111111); // set initial value for this characteristic
+    SetAngleCharUD.writeValue(1111111111); // set initial value for this characteristic
+    SendScalarLR.writeValue(1111111111); // set initial value for this characteristic
+    SendScalarUD.writeValue(1111111111); // set initial value for this characteristic
     CalibrateChar.writeValue(0); // set initial value for this characteristic
 
 
@@ -341,7 +343,9 @@ void initBLE(){
     BLE.advertise();
 
     Serial.println("Bluetooth device active, waiting for connections...");
+    
 }
+
 void loopBLE(){
     // wait for a BLE central
     BLEDevice central = BLE.central();
@@ -353,24 +357,80 @@ void loopBLE(){
         // print the central's BT address:
         Serial.println(central.address());
         #endif
-    }
-    if(SetAngleChar.written()){
-        String zw = String(SetAngleChar.value());
-        String zw1 = zw.substring(0,5);
-        String zw2 = zw.substring(5,10);
-        if(zw1.substring(0,1) == "1") {
-            int x = -(zw1.substring(1).toInt());
-        } else {
-            int x = zw1.substring(1).toInt();
+        if(CalibrateChar.written()) {
+            preciceInit();
         }
-        if(zw2.substring(0,1) == "1") {
-            int y = -(zw2.substring(1).toInt());
-        } else {
-            int y = zw2.substring(1).toInt();
-        }   
+        double LR(0);
+        double UD(0);
+        bool newDrillAngle = false;
+        if(SetAngleCharLR.written()){
+            newDrillAngle = true;
+            double LR = SetAngleCharLR.value(); 
+            // String zw = String(SetAngleChar.value());
+            // int missingChars = 10 - zw.length();
+            // for (int i = 0; i < missingChars; i++) {
+            //     zw = "0" + zw;
+            // }
+            // String zw1 = zw.substring(0,5);
+            // String zw2 = zw.substring(5,10);
+            // if(zw1.substring(0,1) == "1") {
+            //     int x = -(zw1.substring(1).toInt());
+            // } else {
+            //     int x = zw1.substring(1).toInt();
+            // }
+            // if(zw2.substring(0,1) == "1") {
+            //     int y = -(zw2.substring(1).toInt());
+            // } else {
+            //     int y = zw2.substring(1).toInt();
+            // }   
+            
+
+        }
+        if(SetAngleCharUD.written()) {
+            newDrillAngle = true;
+            double UD = SetAngleCharLR.value(); 
+        }
+        if (newDrillAngle) {
+            drillDir = wallNormal;
+            RotDrillDir(LR, wall_X);
+            RotDrillDir(UD, wall_Y);
+        }
+
+        SendScalarUD.writeValue((float)localUpDownError);
+        SendScalarLR.writeValue((float)localLeftRightError);
+        #ifdef DEBUG_BLE
+            Serial.print("Send UD: ");
+            Serial.print((float)localUpDownError);
+            Serial.print("\tSend LR: ");
+            Serial.println((float)localUpDownError);
+        #endif
     }
     if(CalibrateChar.written()){
         CalibrateChar.writeValue(0);
     }
+    
     //Irgend was mit den ergebnissen machen!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+}
+
+/**
+ * Encodes Values that are send over BLE 
+ * 2 values with 5 digits each 
+ * first digit: 1 -> positve value 
+ *              0 -> negative Value
+ */
+unsigned int encodeValue(double leftRight, double upDown) {
+    uint32_t LR = abs(leftRight) * 1000;
+    uint32_t UD = abs(upDown) * 1000;
+    leftRight > 0 ? LR += 10000 : LR = LR;
+    upDown > 0 ? UD += 10000 : UD = UD;
+    uint32_t retVal = (LR * 100000) + UD;
+
+    #ifdef DEBUG_BLE
+        Serial.print("LR_Error: ");
+        Serial.print(localLeftRightError);
+        Serial.print("\tUD_Error: ");
+        Serial.println(localUpDownError);
+        Serial.println(retVal);
+    #endif
+    return retVal;
 }

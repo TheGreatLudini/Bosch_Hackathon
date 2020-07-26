@@ -48,13 +48,16 @@ void Init();
 void getCartesian(double* angles, double* vecToRotate, double* cartesian);
 void getRot(double* angles, double* rotMat);
 void matrixMultip(double* matA, double* matB, double* matResult, int m, int p, int q, int n);
-
+unsigned int encodeValue(double leftRight, double upDown);
 // BLE Battery Service
-BLEService angleService("Angle_service");
+BLEService angleService("aa461740-dc53-4624-97bd-0fee7b1212bb");
 
 // BLE Battery Level Characteristic
-BLEUnsignedIntCharacteristic SetAngleChar("SetAngleChar", BLERead | BLEWrite);
-BLEUnsignedIntCharacteristic GetAngleChar("GetAngleChar", BLERead);
-BLEUnsignedIntCharacteristic CalibrateChar("CalibrateChar", BLERead | BLENotify);
+//BLEUnsignedIntCharacteristic SetAngleChar("951a4e8a-16a8-46a7-8962-0d5dc72881b5", BLERead | BLEWrite);
+BLEFloatCharacteristic SetAngleCharLR("951a4e8a-16a8-46a7-8962-0d5dc72881b5", BLERead | BLEWrite);
+BLEFloatCharacteristic SetAngleCharUD("951a4e8a-16a8-46a7-8962-0d5dc72881b5", BLERead | BLEWrite);
+BLEFloatCharacteristic SendScalarLR("de58c0ab-e1ee-4e87-a578-b40af4f5822b", BLERead | BLEWrite | BLENotify);
+BLEFloatCharacteristic SendScalarUD("a71f3fc6-f97c-4659-9ca2-76a67dede2e3", BLERead | BLEWrite | BLENotify);
+BLEBoolCharacteristic CalibrateChar("5b880d68-b5b9-420c-a528-d21beb197155", BLERead | BLENotify);
 
 #endif
