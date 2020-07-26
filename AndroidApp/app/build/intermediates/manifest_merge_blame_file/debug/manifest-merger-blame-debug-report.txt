@@ -1,0 +1,63 @@
+1<?xml version="1.0" encoding="utf-8"?>
+2<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+3    package="com.example.boostboxapp"
+4    android:versionCode="1"
+5    android:versionName="1.0" >
+6
+7    <uses-sdk
+8        android:minSdkVersion="18"
+8-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml
+9        android:targetSdkVersion="30" />
+9-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml
+10
+11    <uses-permission android:name="android.permission.BLUETOOTH" />
+11-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:5:5-68
+11-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:5:22-65
+12    <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" />
+12-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:6:5-74
+12-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:6:22-71
+13
+14    <uses-feature
+14-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:8:5-10:35
+15        android:name="android.hardware.bluetooth_le"
+15-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:9:9-53
+16        android:required="true" />
+16-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:10:9-32
+17
+18    <application
+18-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:12:5-27:19
+19        android:allowBackup="true"
+19-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:13:9-35
+20        android:appComponentFactory="androidx.core.app.CoreComponentFactory"
+20-->[androidx.core:core:1.1.0] C:\Users\ludwi\.gradle\caches\transforms-2\files-2.1\76f2b6439d16df60df3177021482ee5a\core-1.1.0\AndroidManifest.xml:24:18-86
+21        android:debuggable="true"
+22        android:icon="@mipmap/ic_launcher"
+22-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:14:9-43
+23        android:label="@string/app_name"
+23-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:15:9-41
+24        android:roundIcon="@mipmap/ic_launcher_round"
+24-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:16:9-54
+25        android:supportsRtl="true"
+25-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:17:9-35
+26        android:theme="@style/AppTheme" >
+26-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:18:9-40
+27        <activity android:name="com.example.boostboxapp.DeviceScanActivity" />
+27-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:19:9-65
+27-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:19:19-53
+28        <activity android:name="com.example.boostboxapp.MainActivity" >
+28-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:20:9-26:20
+28-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:20:19-47
+29            <intent-filter>
+29-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:21:13-25:29
+30                <action android:name="android.intent.action.MAIN" />
+30-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:22:17-69
+30-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:22:25-66
+31
+32                <category android:name="android.intent.category.LAUNCHER" />
+32-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:24:17-77
+32-->C:\Users\ludwi\Documents\Bosch_Hackathon\AndroidApp\app\src\main\AndroidManifest.xml:24:27-74
+33            </intent-filter>
+34        </activity>
+35    </application>
+36
+37</manifest>

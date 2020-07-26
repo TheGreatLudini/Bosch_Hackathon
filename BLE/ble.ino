@@ -292,6 +292,7 @@ void initBLE(){
         The name can be changed but maybe be truncated based on space left in advertisement packet
     */
     BLE.setLocalName("Schraubenmaster4000");
+    Serial.println("BLE name set");
 
     BLE.setAdvertisedService(angleService); // add the service UUID
 
