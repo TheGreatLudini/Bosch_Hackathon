@@ -16,7 +16,12 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".DeviceScanActivity"></activity>
+        <service
+            android:name=".BLEService"
+            android:enabled="true"
+            android:exported="true"></service>
+
+        <activity android:name=".DeviceControlActivity" />
         <activity android:name=".MainActivity">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
