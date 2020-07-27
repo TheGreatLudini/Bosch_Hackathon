@@ -12,8 +12,9 @@
 // #define DEBUG_LOCAL_VECTOR
 // #define DEBUG_MOTOR
 //#define DEBUG_TOTAL_ERROR
-//#define DEBUG_ERROR_DIR
+#define DEBUG_ERROR_DIR
 //#define DEBUG_CURRENT
+//#define DEBUG_ACCELERATION
 
 #define DEBUG_BLE
 
@@ -34,6 +35,7 @@ bool initGuard = false;
 uint32_t interruptTime(0);
 uint8_t interruptCounter(0);
 
+sensors_event_t accelerationData;
 double motorCurrentHistory[FILTERLENGTH]; 
 uint32_t counter;
 
@@ -48,9 +50,14 @@ void setup() {
 
     //init LEDs
     strip.begin();
-	strip.fill(RED, 0, LED_COUNT);
-	strip.setBrightness(50);
-	strip.show();
+    strip.setBrightness(50);
+    for(int i = 1; i <= LED_COUNT; i++) {
+        strip.fill(RED, 0, i);
+	    strip.show();
+        delay(100);
+    }
+
+	
 
     // while(!Serial){
     //     delay(1);
@@ -92,6 +99,7 @@ void setup() {
 void loop(void) 
 {   
     double motorCurrent = CurrentMeasurment();
+    bno.getEvent(&accelerationData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
     
     loopBLE(); 
 
@@ -129,7 +137,8 @@ void loop(void)
     if (localErrorTotal < MOTOR_ON_THESHOLD) {
         motorSpeed = 255 - (localErrorTotal * 100 / 30 * 255);
     }
-    analogWrite(MOTOR_SPEED_PIN, motorSpeed);
+    digitalWrite(MOTOR_SPEED_PIN, LOW);
+    // analogWrite(MOTOR_SPEED_PIN, 255 - motorSpeed);
 
     setLeds(localLeftRightError, localUpDownError, localErrorTotal);
     
@@ -160,6 +169,11 @@ void loop(void)
     Serial.print(yLocal.y());
     Serial.print("\tZ: ");
     Serial.println(zLocal.z());
+    #endif
+
+    #ifdef DEBUG_ACCELERATION
+    Serial.print("\taccX: ");
+    Serial.println(accelerationData.acceleration.x);
     #endif
     //delay(100);
 }
@@ -193,7 +207,7 @@ double CurrentMeasurment() {
     counter++;
     #ifdef DEBUG_CURRENT
         Serial.print("T :");
-        Serial.println(motorCurrent);
+        Serial.print(motorCurrent);
     #endif
     return motorCurrent;
 
@@ -316,12 +330,14 @@ void initBLE(){
         and can be used by remote devices to identify this BLE device
         The name can be changed but maybe be truncated based on space left in advertisement packet
     */
+    BLE.setEventHandler(BLEConnected, ConnectHandler);
+    BLE.setEventHandler(BLEDisconnected, DisconnectHandler);
     BLE.setLocalName("Schraubenmaster4000");
     Serial.println("BLE name set");
     Serial.println(BLE.address());
 
 
-    BLE.setAdvertisedService(angleService); // add the service UUID
+    //BLE.setAdvertisedService(angleService); // add the service UUID
 
     angleService.addCharacteristic(SetAngleCharLR); // add the battery level characteristic
     angleService.addCharacteristic(SetAngleCharUD); // add the battery level characteristic
@@ -329,7 +345,8 @@ void initBLE(){
     angleService.addCharacteristic(SendScalarLR); // add the battery level characteristic
     angleService.addCharacteristic(CalibrateChar); // add the battery level characteristic
 
-    BLE.addService(angleService); // Add the battery service
+
+    BLE.addService(angleService);
 
     SetAngleCharLR.writeValue(1111111111); // set initial value for this characteristic
     SetAngleCharUD.writeValue(1111111111); // set initial value for this characteristic
@@ -348,9 +365,11 @@ void initBLE(){
 void loopBLE(){
     // wait for a BLE central
     BLEDevice central = BLE.central();
-
+    
+    
     // if a central is connected to the peripheral:
     if (central) {
+        
         // #ifdef DEBUG_BLE
         // Serial.print("Connected to central: ");
         // // print the central's BT address:
@@ -365,25 +384,6 @@ void loopBLE(){
         if(SetAngleCharLR.written()){
             newDrillAngle = true;
             double LR = SetAngleCharLR.value(); 
-            // String zw = String(SetAngleChar.value());
-            // int missingChars = 10 - zw.length();
-            // for (int i = 0; i < missingChars; i++) {
-            //     zw = "0" + zw;
-            // }
-            // String zw1 = zw.substring(0,5);
-            // String zw2 = zw.substring(5,10);
-            // if(zw1.substring(0,1) == "1") {
-            //     int x = -(zw1.substring(1).toInt());
-            // } else {
-            //     int x = zw1.substring(1).toInt();
-            // }
-            // if(zw2.substring(0,1) == "1") {
-            //     int y = -(zw2.substring(1).toInt());
-            // } else {
-            //     int y = zw2.substring(1).toInt();
-            // }   
-            
-
         }
         if(SetAngleCharUD.written()) {
             newDrillAngle = true;
@@ -396,6 +396,8 @@ void loopBLE(){
         }
 
         SendScalarUD.writeValue((float)localUpDownError);
+        Serial.println("I wrote a value to BLE char.");
+        // SendScalarUD.valueUpdated();
         SendScalarLR.writeValue((float)localLeftRightError);
         #ifdef DEBUG_BLE
             Serial.print("Send UD: ");
@@ -409,6 +411,54 @@ void loopBLE(){
     }
     
     //Irgend was mit den ergebnissen machen!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
+}
+
+void fakeLoop() {
+    Serial.println("fakeLoop");
+    double motorCurrent = CurrentMeasurment();
+    bno.getEvent(&accelerationData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
+    
+    loopBLE(); 
+
+    // -------------------
+    // handel Initializations if those are set in the set angle interrupt
+    if (!initGuard) {
+        if (preciceInitialize) {
+            preciceInit();
+        } else if (initialize) {
+            Init();
+        }
+    } else if (abs(millis() - interruptTime) > 2 * debounce) {
+        initGuard = false;
+    }
+    // -------------------
+    // calculate misalignment/errors
+    imu::Quaternion quat = bno.getQuat();
+    imu::Vector<3> xGlobal(1.0, 0.0, 0.0);
+    imu::Vector<3> yGlobal(0.0, 1.0, 0.0);
+    imu::Vector<3> zGlobal(0.0, 0.0, 1.0);
+    // Coordinate system axes of screw driver in global coordinates, x is drilling axis:
+    imu::Vector<3> xLocal = quat.rotateVector(xGlobal);
+    imu::Vector<3> yLocal = quat.rotateVector(yGlobal);
+    imu::Vector<3> zLocal = quat.rotateVector(zGlobal);
+
+    // Angle error in up-down- and left-right-direction, determined via the dot product
+    // If the dot product is 0, the respective axis is orthogonal to the wall normal, therefore good
+    localLeftRightError = drillDir.dot(yLocal);
+    localUpDownError = drillDir.dot(zLocal);
+    double localErrorTotal = sqrt(pow(localUpDownError, 2) + pow(localLeftRightError, 2));
+
+    // -------------------
+    // set Leds and Motorspeed acording to misalignment
+    uint8_t motorSpeed(0);
+    if (localErrorTotal < MOTOR_ON_THESHOLD) {
+        motorSpeed = 255 - (localErrorTotal * 100 / 30 * 255);
+    }
+    digitalWrite(MOTOR_SPEED_PIN, LOW);
+    // analogWrite(MOTOR_SPEED_PIN, 255 - motorSpeed);
+
+    setLeds(localLeftRightError, localUpDownError, localErrorTotal);
+    
 }
 
 /**
