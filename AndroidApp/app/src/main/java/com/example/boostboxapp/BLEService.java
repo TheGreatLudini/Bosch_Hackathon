@@ -70,7 +70,7 @@ public class BLEService extends Service {
                 if (status == bluetoothGatt.GATT_SUCCESS) {
                     int bondstate = device.getBondState();
                     if (bondstate == BOND_NONE || bondstate == BOND_BONDED) {
-                        final int delay = bondstate == BOND_BONDED ? 1000 : 2000;
+                        final int delay = bondstate == BOND_BONDED ? 5000 : 5000;
                         final Handler handler = new Handler(Looper.getMainLooper());
                         handler.postDelayed(new Runnable() {
                             @Override
@@ -299,13 +299,15 @@ public class BLEService extends Service {
         }
         bluetoothGatt.setCharacteristicNotification(characteristic, enabled);
 
-        // This is specific to Heart Rate Measurement.
-        if (UUID_ARDUINO_SERVICE.equals(characteristic.getUuid())) {
-            BluetoothGattDescriptor descriptor = characteristic.getDescriptor(
-                    UUID.fromString(GattAttributes.CLIENT_CHARACTERISTIC_CONFIG));
-            descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
-            bluetoothGatt.writeDescriptor(descriptor);
+
+        BluetoothGattDescriptor descriptor = characteristic.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"));
+        descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
+        if (bluetoothGatt.writeDescriptor(descriptor)) {
+            Log.i(TAG, "Wrote the descriptor to enable notification");
+        } else {
+            Log.w(TAG, "Descriptor writing not successful");
         }
+        // This is specific to Heart Rate Measurement.
     }
 
     /**

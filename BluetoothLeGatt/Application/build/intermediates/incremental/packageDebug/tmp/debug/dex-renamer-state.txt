@@ -1,4 +1,4 @@
-#Sun Jul 26 17:07:59 CEST 2020
+#Mon Jul 27 16:40:47 CEST 2020
 base.0=C\:\\Users\\ludwi\\Documents\\Bosch_Hackathon\\BluetoothLeGatt\\Application\\build\\intermediates\\dex\\debug\\mergeDexDebug\\out
 path.0=classes.dex
 renamed.0=classes.dex

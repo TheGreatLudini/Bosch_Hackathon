@@ -6,6 +6,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCharacteristic;
+import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -22,12 +23,14 @@ import android.widget.SimpleExpandableListAdapter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.UUID;
 
 public class DashboardActivity extends AppCompatActivity {
 
     private final static String TAG = DashboardActivity.class.getSimpleName();
     private static final String ARDUINO_SERVICE_UUID = "aa461740-dc53-4624-97bd-0fee7b1212bb";
     private static final String UPDOWNERROR_UUID = "a71f3fc6-f97c-4659-9ca2-76a67dede2e3";
+    private static final String UPDOWNERROR_DESCRIPTOR_UUID = "00002902-0000-1000-8000-00805f9b34fb";
 
     public static final String EXTRAS_ARDUINO_NAME = "ARDUINO_NAME";
     public static final String EXTRAS_ARDUINO_ADDRESS = "ARDUINO_ADDRESS";
@@ -122,6 +125,9 @@ public class DashboardActivity extends AppCompatActivity {
             Log.i(TAG, "UpDownError Char was not found");
             return;
         }
+        Log.i(TAG, "The current characteristic has UUID: " + upDownErrorChar.getUuid().toString());
+        //mBluetoothLeService.setCharacteristicNotification(upDownErrorChar, true);
+
         mBluetoothLeService.readCharacteristic(upDownErrorChar);
         //mBluetoothLeService.setCharacteristicNotification(upDownErrorChar, true);
     }
@@ -170,8 +176,18 @@ public class DashboardActivity extends AppCompatActivity {
     public void readData(View view) {
         if (mBluetoothLeService != null && upDownErrorChar != null) {
             mBluetoothLeService.readCharacteristic(upDownErrorChar);
+        } else {
+            Log.w(TAG, "Cannot read, no BLE connection or char not available!");
         }
 
+    }
+
+    public void disconnectDevice(View view) {
+        if (mBluetoothLeService != null) {
+            mBluetoothLeService.disconnect();
+        } else {
+            Log.w(TAG, "Cannot disconnect!");
+        }
     }
     private static IntentFilter makeGattUpdateIntentFilter() {
         final IntentFilter intentFilter = new IntentFilter();
