@@ -12,11 +12,12 @@
 // #define DEBUG_LOCAL_VECTOR
 // #define DEBUG_MOTOR
 //#define DEBUG_TOTAL_ERROR
-#define DEBUG_ERROR_DIR
-//#define DEBUG_CURRENT
-//#define DEBUG_ACCELERATION
+//#define DEBUG_ERROR_DIR
+ #define DEBUG_CURRENT
+ #define DEBUG_ACCELERATION
 
-#define DEBUG_BLE
+//#define DEBUG_BLE
+#define DEBUG_BLE_RECIVE
 
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
@@ -37,10 +38,15 @@ uint8_t interruptCounter(0);
 
 sensors_event_t accelerationData;
 double motorCurrentHistory[FILTERLENGTH]; 
+double voltageHistory[VOLT_FILTERLENGTH]; 
 uint32_t counter;
+uint32_t voltCounter;
+bool forwardDir = true;
 
 double localLeftRightError;
 double localUpDownError;
+
+uint32_t lastSendTime = 0;
 
 //Motor myMotor = new Motor(MOTOR_FOR_DIR_PIN, MOTOR_BACK_DIR_PIN, MOTOR_SPEED_PIN);
     
@@ -50,18 +56,16 @@ void setup() {
 
     //init LEDs
     strip.begin();
-    strip.setBrightness(50);
+    strip.setBrightness(20);
     for(int i = 1; i <= LED_COUNT; i++) {
         strip.fill(RED, 0, i);
 	    strip.show();
         delay(100);
     }
+    strip.clear();
+    strip.setPixelColor(LedCenter, RED);
+    strip.show();
 
-	
-
-    // while(!Serial){
-    //     delay(1);
-    // }
     Serial.println("Orientation Sensor Test"); 
     Serial.println("");
 
@@ -89,6 +93,8 @@ void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     pinMode(CURRENT_SENSE_PIN, INPUT);
     pinMode(MOTOR_SPEED_PIN, OUTPUT);
+    pinMode(VOLT_BACK_PIN, INPUT);
+    pinMode(VOLT_FOR_PIN, INPUT);
 
     memset(motorCurrentHistory, 0, FILTERLENGTH * 8);
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), setAngle, FALLING);
@@ -99,6 +105,7 @@ void setup() {
 void loop(void) 
 {   
     double motorCurrent = CurrentMeasurment();
+    double voltage = VoltageMeasurment();
     bno.getEvent(&accelerationData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
     
     loopBLE(); 
@@ -127,8 +134,8 @@ void loop(void)
 
     // Angle error in up-down- and left-right-direction, determined via the dot product
     // If the dot product is 0, the respective axis is orthogonal to the wall normal, therefore good
-    localLeftRightError = drillDir.dot(yLocal);
-    localUpDownError = drillDir.dot(zLocal);
+    localLeftRightError = drillDir.dot(zLocal);
+    localUpDownError = drillDir.dot(yLocal);
     double localErrorTotal = sqrt(pow(localUpDownError, 2) + pow(localLeftRightError, 2));
 
     // -------------------
@@ -175,6 +182,7 @@ void loop(void)
     Serial.print("\taccX: ");
     Serial.println(accelerationData.acceleration.x);
     #endif
+
     //delay(100);
 }
 
@@ -206,26 +214,50 @@ double CurrentMeasurment() {
     motorCurrent = motorCurrent / FILTERLENGTH;
     counter++;
     #ifdef DEBUG_CURRENT
-        Serial.print("T :");
+        Serial.print("I :");
         Serial.print(motorCurrent);
     #endif
     return motorCurrent;
 
 }
 
+double VoltageMeasurment() {
+    double voltage(0);
+    uint16_t voltForw = analogRead(VOLT_FOR_PIN); 
+    uint16_t voltBack = analogRead(VOLT_BACK_PIN);
+    if (voltForw > voltBack) {
+        forwardDir = true;
+        voltageHistory[counter % FILTERLENGTH] = VOLTAGE_FACTOR * (voltForw - voltBack);
+    } else {
+        forwardDir = false;
+        voltageHistory[counter % FILTERLENGTH] = VOLTAGE_FACTOR * (voltBack - voltForw);
+    }    
+    for (int i = 0; i < VOLT_FILTERLENGTH; i++) {
+        voltage += voltageHistory[i];
+    }
+    voltage = voltage / VOLT_FILTERLENGTH;
+    voltCounter++;
+    #ifdef DEBUG_CURRENT
+        Serial.print("\tU :");
+        Serial.print(voltage);
+    #endif
+    return voltage;
+
+}
+
 void setLeds(double localLeftRightError, double localUpDownError, double localErrorTotal) {
-    if (localUpDownError >= 0) {
+    if (localUpDownError <= 0) {
         strip.setPixelColor(LedUp, 0, localUpDownError * 255, 0);
         strip.setPixelColor(LedDown, BLACK);
     } else {
-        strip.setPixelColor(LedDown, 0, localUpDownError * 255, 0);
+        strip.setPixelColor(LedDown, 0, -localUpDownError * 255, 0);
         strip.setPixelColor(LedUp, BLACK);
     }
     if (localLeftRightError >= 0) {
-        strip.setPixelColor(LedLeft, 0, localUpDownError * 255, 0);
+        strip.setPixelColor(LedLeft, 0, localLeftRightError * 255, 0);
         strip.setPixelColor(LedRight, BLACK);
     } else {
-        strip.setPixelColor(LedRight, 0, localUpDownError * 255, 0);
+        strip.setPixelColor(LedRight, 0, -localLeftRightError * 255, 0);
         strip.setPixelColor(LedLeft, BLACK);
     }
     if (localErrorTotal < CENTER_LED_ON_THESHOLD) {
@@ -384,81 +416,42 @@ void loopBLE(){
         if(SetAngleCharLR.written()){
             newDrillAngle = true;
             double LR = SetAngleCharLR.value(); 
+            #ifdef DEBUG_BLE_RECIVE
+            Serial.print("recived LR: ");
+            Serial.println(LR);
+            #endif
         }
         if(SetAngleCharUD.written()) {
             newDrillAngle = true;
             double UD = SetAngleCharLR.value(); 
+            #ifdef DEBUG_BLE_RECIVE
+            Serial.print("recived UD: ");
+            Serial.println(UD);
+            #endif
         }
         if (newDrillAngle) {
             drillDir = wallNormal;
             drillDir = RotDir(LR, wall_X, drillDir);
             drillDir = RotDir(UD, wall_Y, drillDir);
         }
-
-        SendScalarUD.writeValue((float)localUpDownError);
-        Serial.println("I wrote a value to BLE char.");
-        // SendScalarUD.valueUpdated();
-        SendScalarLR.writeValue((float)localLeftRightError);
+        if (abs(millis() - lastSendTime) > 500) {
+            SendScalarUD.writeValue((float)localUpDownError);
+            // Serial.println("I wrote a value to BLE char.");
+            // SendScalarUD.valueUpdated();
+            SendScalarLR.writeValue((float)localLeftRightError);
+            lastSendTime = millis();
+        }
         #ifdef DEBUG_BLE
             Serial.print("Send UD: ");
             Serial.print((float)localUpDownError);
             Serial.print("\tSend LR: ");
             Serial.println((float)localUpDownError);
         #endif
+
     }
     if(CalibrateChar.written()){
         CalibrateChar.writeValue(0);
     }
-    
-    //Irgend was mit den ergebnissen machen!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!    
-}
-
-void fakeLoop() {
-    Serial.println("fakeLoop");
-    double motorCurrent = CurrentMeasurment();
-    bno.getEvent(&accelerationData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
-    
-    loopBLE(); 
-
-    // -------------------
-    // handel Initializations if those are set in the set angle interrupt
-    if (!initGuard) {
-        if (preciceInitialize) {
-            preciceInit();
-        } else if (initialize) {
-            Init();
-        }
-    } else if (abs(millis() - interruptTime) > 2 * debounce) {
-        initGuard = false;
-    }
-    // -------------------
-    // calculate misalignment/errors
-    imu::Quaternion quat = bno.getQuat();
-    imu::Vector<3> xGlobal(1.0, 0.0, 0.0);
-    imu::Vector<3> yGlobal(0.0, 1.0, 0.0);
-    imu::Vector<3> zGlobal(0.0, 0.0, 1.0);
-    // Coordinate system axes of screw driver in global coordinates, x is drilling axis:
-    imu::Vector<3> xLocal = quat.rotateVector(xGlobal);
-    imu::Vector<3> yLocal = quat.rotateVector(yGlobal);
-    imu::Vector<3> zLocal = quat.rotateVector(zGlobal);
-
-    // Angle error in up-down- and left-right-direction, determined via the dot product
-    // If the dot product is 0, the respective axis is orthogonal to the wall normal, therefore good
-    localLeftRightError = drillDir.dot(yLocal);
-    localUpDownError = drillDir.dot(zLocal);
-    double localErrorTotal = sqrt(pow(localUpDownError, 2) + pow(localLeftRightError, 2));
-
-    // -------------------
-    // set Leds and Motorspeed acording to misalignment
-    uint8_t motorSpeed(0);
-    if (localErrorTotal < MOTOR_ON_THESHOLD) {
-        motorSpeed = 255 - (localErrorTotal * 100 / 30 * 255);
-    }
-    digitalWrite(MOTOR_SPEED_PIN, LOW);
-    // analogWrite(MOTOR_SPEED_PIN, 255 - motorSpeed);
-
-    setLeds(localLeftRightError, localUpDownError, localErrorTotal);
-    
 }
 
 /**

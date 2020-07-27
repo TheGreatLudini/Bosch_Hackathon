@@ -23,17 +23,22 @@ enum Leds : uint8_t {
 };
 
 // Motorcontrol
-const uint8_t MOTOR_SPEED_PIN = 12;
+const uint8_t MOTOR_SPEED_PIN = 6;
 const float ANGLE_DISPLACEMENT(8.0); // offset of the drilling axis to the buttom plate
 const double MOTOR_ON_THESHOLD(0.3);
 const double CENTER_LED_ON_THESHOLD(0.15);
 
 // Current measurement
 #define CURRENT_SENSE_PIN A6
+#define VOLT_FOR_PIN A2
+#define VOLT_BACK_PIN A7
 const double GAIN(20.0);
 const double SENSE_RESISTANCE(0.002);
 const double CURRENT_FACTOR = REF_VOLTAGE / (1023 * GAIN * SENSE_RESISTANCE);
+const double VOLTAGE_FACTOR = REF_VOLTAGE * 5.7 / 1023; // 47k und 10k Wiederstäde im Spannungsteiler
+
 const uint16_t FILTERLENGTH(50);
+const uint16_t VOLT_FILTERLENGTH(30);
 
 const uint32_t debounce(10); // 20 ms debounce time to prevent flickerining
 
@@ -55,8 +60,8 @@ BLEService angleService("aa461740-dc53-4624-97bd-0fee7b1212bb");
 
 // BLE Battery Level Characteristic
 //BLEUnsignedIntCharacteristic SetAngleChar("951a4e8a-16a8-46a7-8962-0d5dc72881b5", BLERead | BLEWrite);
-BLEFloatCharacteristic SetAngleCharLR("951a4e8a-16a8-46a7-8962-0d5dc72881b5", BLERead | BLEWrite);
-BLEFloatCharacteristic SetAngleCharUD("951a4e8a-16a8-46a7-8962-0d5dc72881b5", BLERead | BLEWrite);
+BLEIntCharacteristic SetAngleCharLR("951a4e8a-16a8-46a7-8962-0d5dc72881b5", BLERead | BLEWrite);
+BLEIntCharacteristic SetAngleCharUD("05d47d9d-6295-491d-81ac-375395100e1e", BLERead | BLEWrite);
 BLEFloatCharacteristic SendScalarLR("de58c0ab-e1ee-4e87-a578-b40af4f5822b", BLERead | BLEWrite | BLENotify);
 BLEFloatCharacteristic SendScalarUD("a71f3fc6-f97c-4659-9ca2-76a67dede2e3", BLERead | BLEWrite | BLENotify);
 BLEBoolCharacteristic CalibrateChar("5b880d68-b5b9-420c-a528-d21beb197155", BLERead | BLENotify);
