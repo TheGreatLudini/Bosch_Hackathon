@@ -14,6 +14,11 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 
+/**
+ * This activity activates Bluetooth and allows the user to connect the mobile device to
+ * the Arduino with a button. After the button is touched, the app switches to the dashboard and
+ * starts to connect to the Arduino.
+ */
 public class MainActivity extends AppCompatActivity {
 
     private final static String TAG = MainActivity.class.getSimpleName();
@@ -21,9 +26,6 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothAdapter bluetoothAdapter;
 
     private static final int REQUEST_ENABLE_BT = 1;
-    private static final String ARDUINO_NAME = "Schraubenmaster4000"; // BLE name of the arduino
-    private static final String ARDUINO_ADDRESS = "4C:11:AE:C8:5A:B2"; // BLE address of the arduino
-
 
 
     @Override
@@ -51,8 +53,6 @@ public class MainActivity extends AppCompatActivity {
         }
         Log.i(TAG, "Bluetooth enabled, starting Dashboard now.");
         final Intent dashboardIntent = new Intent(this, DashboardActivity.class);
-        dashboardIntent.putExtra(DashboardActivity.EXTRAS_ARDUINO_NAME, ARDUINO_NAME);
-        dashboardIntent.putExtra(DashboardActivity.EXTRAS_ARDUINO_ADDRESS, ARDUINO_ADDRESS);
         startActivity(dashboardIntent);
 
 

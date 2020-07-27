@@ -17,9 +17,14 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Looper;
 import android.util.Log;
+import android.util.Pair;
 
 import java.nio.ByteOrder;
+import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Queue;
 import java.util.UUID;
 import java.nio.ByteBuffer;
 
@@ -35,6 +40,7 @@ public class BLEService extends Service {
     private BluetoothGatt bluetoothGatt;
     private BluetoothDevice device;
     private String bluetoothDeviceAddress;
+    private Queue<Pair<BluetoothGattCharacteristic, Integer>> sendQueue;
     private int mConnectionState = STATE_DISCONNECTED;
 
     private static final int STATE_DISCONNECTED = 0;
@@ -52,9 +58,6 @@ public class BLEService extends Service {
     public final static String EXTRA_DATA =
             "com.example.bluetooth.le.EXTRA_DATA";
 
-    public final static UUID UUID_ARDUINO_SERVICE =
-            UUID.fromString(GattAttributes.ARDUINO_SERVICE);
-
     // Implements callback methods for GATT events that the app cares about.  For example,
     // connection change and services discovered.
     private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
@@ -67,32 +70,24 @@ public class BLEService extends Service {
                 broadcastUpdate(intentAction);
                 Log.i(TAG, "Connected to GATT server.");
                 // Attempts to discover services after successful connection.
-                if (status == bluetoothGatt.GATT_SUCCESS) {
-                    int bondstate = device.getBondState();
-                    if (bondstate == BOND_NONE || bondstate == BOND_BONDED) {
-                        final int delay = bondstate == BOND_BONDED ? 5000 : 5000;
-                        final Handler handler = new Handler(Looper.getMainLooper());
-                        handler.postDelayed(new Runnable() {
-                            @Override
-                            public void run() {
-                                Log.i(TAG, "We will run the service discovery after ." + delay);
-                                boolean result = bluetoothGatt.discoverServices();
-                                if (!result) {
-                                    Log.e(TAG, "DiscoverServices failed to start");
-                                }
+                int bondstate = device.getBondState();
+                if (bondstate == BOND_NONE || bondstate == BOND_BONDED) {
+                    final int delay = bondstate == BOND_BONDED ? 5000 : 5000;
+                    final Handler handler = new Handler(Looper.getMainLooper());
+                    handler.postDelayed(new Runnable() {
+                        @Override
+                        public void run() {
+                            Log.i(TAG, "We will run the service discovery after "
+                                    + delay / 1000 + "seconds");
+                            boolean result = bluetoothGatt.discoverServices();
+                            if (!result) {
+                                Log.e(TAG, "DiscoverServices failed to start");
                             }
-                        }, delay);
-                        //Log.i(TAG, "Attempting to start service discovery:" +
-                        //bluetoothGatt.discoverServices());
-                    } else if (bondstate == BOND_BONDING) {
-                        Log.i(TAG, "Waiting for bonding to complete");
-                    }
-                } else {
-                    Log.i(TAG,"Not a success");
+                        }
+                    }, delay);
+                } else if (bondstate == BOND_BONDING) {
+                    Log.i(TAG, "Waiting for bonding to complete");
                 }
-
-
-
             } else if (newState == BluetoothProfile.STATE_DISCONNECTED) {
                 intentAction = ACTION_GATT_DISCONNECTED;
                 mConnectionState = STATE_DISCONNECTED;
@@ -102,9 +97,8 @@ public class BLEService extends Service {
         }
         @Override
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
-            Log.i(TAG, "Found some services, discovered");
+            Log.i(TAG, "Discovered some services");
             if (status == BluetoothGatt.GATT_SUCCESS) {
-                Log.i(TAG, "Status is success");
                 broadcastUpdate(ACTION_GATT_SERVICES_DISCOVERED);
             } else {
                 Log.w(TAG, "onServicesDiscovered received: " + status);
@@ -121,11 +115,20 @@ public class BLEService extends Service {
             }
         }
 
+
         @Override
         public void onCharacteristicChanged(BluetoothGatt gatt,
                                             BluetoothGattCharacteristic characteristic) {
             Log.i(TAG, "A characteristic was changed");
             broadcastUpdate(ACTION_DATA_AVAILABLE, characteristic);
+        }
+
+        @Override
+        public void onCharacteristicWrite(BluetoothGatt gatt,
+                                          BluetoothGattCharacteristic characteristic, int status) {
+            if (!sendQueue.isEmpty()) {
+                writeCharacteristic();
+            }
         }
     };
 
@@ -198,6 +201,8 @@ public class BLEService extends Service {
             Log.e(TAG, "Unable to obtain a BluetoothAdapter.");
             return false;
         }
+
+        sendQueue = new LinkedList<Pair<BluetoothGattCharacteristic, Integer>>();
 
         return true;
     }
@@ -285,6 +290,33 @@ public class BLEService extends Service {
         bluetoothGatt.readCharacteristic(characteristic);
     }
 
+    public void queueUpWrite(BluetoothGattCharacteristic characteristic, int data) {
+        if (bluetoothAdapter == null || bluetoothGatt == null) {
+            Log.w(TAG, "BluetoothAdapter not initialized");
+            return;
+        }
+        Pair<BluetoothGattCharacteristic, Integer> sendPair
+                = new Pair<BluetoothGattCharacteristic, Integer>(characteristic, data);
+        sendQueue.add(sendPair);
+        Pair<BluetoothGattCharacteristic, Integer> nextPairToSend = sendQueue.poll();
+        writeCharacteristic();
+    }
+
+    public void writeCharacteristic() {
+        if (bluetoothAdapter == null || bluetoothGatt == null) {
+            Log.w(TAG, "BluetoothAdapter not initialized");
+            return;
+        }
+        if (sendQueue.isEmpty()) {
+            Log.w(TAG, "Queue already empty");
+            return;
+        }
+        Pair<BluetoothGattCharacteristic, Integer> nextPairToSend = sendQueue.poll();
+        BluetoothGattCharacteristic nextChar = nextPairToSend.first;
+        nextChar.setValue(nextPairToSend.second, BluetoothGattCharacteristic.FORMAT_SINT32, 0);
+        bluetoothGatt.writeCharacteristic(nextChar);
+    }
+
     /**
      * Enables or disables notification on a give characteristic.
      *
@@ -300,7 +332,8 @@ public class BLEService extends Service {
         bluetoothGatt.setCharacteristicNotification(characteristic, enabled);
 
 
-        BluetoothGattDescriptor descriptor = characteristic.getDescriptor(UUID.fromString("00002902-0000-1000-8000-00805f9b34fb"));
+        BluetoothGattDescriptor descriptor
+                = characteristic.getDescriptor(UUID.fromString(GattConfigs.UPDOWNERROR_DESCRIPTOR_UUID));
         descriptor.setValue(BluetoothGattDescriptor.ENABLE_NOTIFICATION_VALUE);
         if (bluetoothGatt.writeDescriptor(descriptor)) {
             Log.i(TAG, "Wrote the descriptor to enable notification");
@@ -321,10 +354,5 @@ public class BLEService extends Service {
         if (bluetoothGatt == null) return null;
 
         return bluetoothGatt.getServices();
-    }
-
-    @Override
-    public void onCreate() {
-        Log.i(TAG, "Service created");
     }
 }
