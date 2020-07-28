@@ -27,6 +27,7 @@ const uint8_t MOTOR_SPEED_PIN = 6;
 const float ANGLE_DISPLACEMENT(8.0); // offset of the drilling axis to the buttom plate
 
 const double MOTOR_ON_THESHOLD(0.3);
+const int MOTOR_SPEED_SENSITIVITY(500); // sensitivity of motor to angle displacement, the higher the more sensitive
 const double CENTER_LED_ON_THESHOLD(0.15);
 
 // IMU Calibration in degree

@@ -9,11 +9,12 @@
 #include "config.h"
     
 //#define DEBUG_LOCAL_VECTOR
-#define DEBUG_MOTOR
+//#define DEBUG_MOTOR
 //#define DEBUG_TOTAL_ERROR
-#define DEBUG_ERROR_DIR
+//#define DEBUG_ERROR_DIR
 //#define DEBUG_CURRENT
 //#define DEBUG_ACCELERATION
+//#define DEBUG_INTERRUPT
 
 //#define DEBUG_BLE
 //#define DEBUG_BLE_RECIVE
@@ -42,6 +43,8 @@ double voltageHistory[VOLT_FILTERLENGTH];
 uint32_t counter(0);
 uint32_t voltCounter(0);
 bool forwardDir = true;
+bool buttonStateOld = false; // false is high
+bool buttonState = false;
 
 double localLeftRightError;
 double localUpDownError;
@@ -101,14 +104,22 @@ void setup() {
     pinMode(VOLT_FOR_PIN, INPUT);
 
     memset(motorCurrentHistory, 0, FILTERLENGTH * 8);
-    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), setAngle, FALLING);
+    //attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), setAngle, LOW);
     //initBLE();
     Serial.println("Setup done");
 }
     
 void loop(void) 
 {   
-    
+    buttonStateOld = buttonState;
+    buttonState = (digitalRead(INTERRUPT_PIN) == LOW);
+    if ((buttonState != buttonStateOld) && !buttonState) {
+        setAngle();
+    }
+
+    //if (digitalRead(INTERRUPT_PIN) == LOW) {
+        //setAngle();
+    //}
     double motorCurrent = CurrentMeasurment();
     double voltage = VoltageMeasurment();
     bno.getEvent(&accelerationData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
@@ -117,7 +128,7 @@ void loop(void)
     //-------------------
     // Triggerdetection
     if(voltage > TRIGGER_DEBOUNCE) {
-
+   
     }
     // -------------------
     // handel Initializations if those are set in the set angle interrupt
@@ -149,10 +160,15 @@ void loop(void)
     // set Leds and Motorspeed acording to misalignment
     uint8_t motorSpeed(0);
     if (localErrorTotal < MOTOR_ON_THESHOLD) {
+        Serial.print("Good ");
         // The higher this motor speed variable, the slower the motor unfortunately
-        motorSpeed = localErrorTotal * 255 // localErrorTotal < 0.3 anyway
+        motorSpeed = min(localErrorTotal * MOTOR_SPEED_SENSITIVITY, 255); 
+        Serial.println(motorSpeed);
+    } else {
+        Serial.println("Bad");
+        motorSpeed = 255;
     }
-    digitalWrite(MOTOR_SPEED_PIN, motorSpeed);
+    analogWrite(MOTOR_SPEED_PIN, motorSpeed);
     // analogWrite(MOTOR_SPEED_PIN, 255 - motorSpeed);
 
     setLeds(localLeftRightError, localUpDownError, localErrorTotal);
@@ -196,6 +212,9 @@ void loop(void)
 
 void setAngle()
 {
+    #ifdef DEBUG_INTERRUPT
+    Serial.println("Interrupt was made!");
+    #endif
     if (abs(millis() - interruptTime) > 500) {
         interruptCounter = 0;
     }
@@ -210,7 +229,7 @@ void setAngle()
         initialize = true;
         interruptTime = millis();
     }
-    //Serial.println("Initializing");
+        //Serial.println("Initializing");    
 }
 
 double CurrentMeasurment() {
