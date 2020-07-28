@@ -7,12 +7,11 @@
 
 
 #include "config.h"
-//#include "Motor.h"
     
- #define DEBUG_LOCAL_VECTOR
-// #define DEBUG_MOTOR
+//#define DEBUG_LOCAL_VECTOR
+#define DEBUG_MOTOR
 //#define DEBUG_TOTAL_ERROR
-//#define DEBUG_ERROR_DIR
+#define DEBUG_ERROR_DIR
 //#define DEBUG_CURRENT
 //#define DEBUG_ACCELERATION
 
@@ -40,8 +39,8 @@ uint8_t interruptCounter(0);
 sensors_event_t accelerationData;
 double motorCurrentHistory[FILTERLENGTH]; 
 double voltageHistory[VOLT_FILTERLENGTH]; 
-uint32_t counter;
-uint32_t voltCounter;
+uint32_t counter(0);
+uint32_t voltCounter(0);
 bool forwardDir = true;
 
 double localLeftRightError;
@@ -58,6 +57,10 @@ void setup() {
     //init LEDs
     strip.begin();
     strip.setBrightness(20);
+    strip.fill(RED, 0 , LED_COUNT);
+    strip.show();
+    strip.clear();
+    strip.show();
     for(int i = 1; i <= LED_COUNT; i++) {
         strip.fill(RED, 0, i);
 	    strip.show();
@@ -131,6 +134,7 @@ void loop(void)
     // calculate misalignment/errors
     imu::Quaternion quat = bno.getQuat();
     // Coordinate system axes of screw driver in global coordinates, x is drilling axis:
+    
     imu::Vector<3> xLocal = quat.rotateVector(xGlobal);
     imu::Vector<3> yLocal = quat.rotateVector(yGlobal);
     imu::Vector<3> zLocal = quat.rotateVector(zGlobal);
@@ -176,9 +180,9 @@ void loop(void)
     Serial.print("\tX: ");
     Serial.print(xLocal.x());
     Serial.print("\tY: ");
-    Serial.print(yLocal.y());
+    Serial.print(xLocal.y());
     Serial.print("\tZ: ");
-    Serial.println(zLocal.z());
+    Serial.println(xLocal.z());
     #endif
 
     #ifdef DEBUG_ACCELERATION
@@ -230,15 +234,15 @@ double VoltageMeasurment() {
     uint16_t voltBack = analogRead(VOLT_BACK_PIN);
     if (voltForw > voltBack) {
         forwardDir = true;
-        voltageHistory[counter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltForw - voltBack);
+        voltageHistory[voltCounter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltForw - voltBack);
     } else {
         forwardDir = false;
-        voltageHistory[counter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltBack - voltForw);
+        voltageHistory[voltCounter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltBack - voltForw);
     }    
     for (int i = 0; i < VOLT_FILTERLENGTH; i++) {
         voltage += voltageHistory[i];
     }
-    voltage = voltage / VOLT_FILTERLENGTH;
+    voltage /= VOLT_FILTERLENGTH;
     voltCounter++;
     #ifdef DEBUG_CURRENT
         Serial.print("\tU :");
@@ -249,14 +253,14 @@ double VoltageMeasurment() {
 }
 
 void setLeds(double localLeftRightError, double localUpDownError, double localErrorTotal) {
-    if (localUpDownError <= 0) {
+    if (localUpDownError >= 0) {
         strip.setPixelColor(LedUp, 0, localUpDownError * 255, 0);
         strip.setPixelColor(LedDown, BLACK);
     } else {
         strip.setPixelColor(LedDown, 0, -localUpDownError * 255, 0);
         strip.setPixelColor(LedUp, BLACK);
     }
-    if (localLeftRightError >= 0) {
+    if (localLeftRightError <= 0) {
         strip.setPixelColor(LedLeft, 0, localLeftRightError * 255, 0);
         strip.setPixelColor(LedRight, BLACK);
     } else {
@@ -278,9 +282,7 @@ void setLeds(double localLeftRightError, double localUpDownError, double localEr
 void preciceInit() {
     preciceInitialize = false;
     imu::Quaternion quat = bno.getQuat();
-    wallNormal = quat.rotateVector(yGlobal.invert());
-    wall_X = quat.rotateVector(xGlobal.invert());
-    wall_Z = quat.rotateVector(zGlobal);
+    wallNormal = quat.rotateVector(yGlobal);
     wallNormal = RotDir(ANGLE_DISPLACEMENT, quat.rotateVector(zGlobal).invert(), wallNormal);
     Serial.print("X: ");
     Serial.print(wallNormal.x());
@@ -298,10 +300,8 @@ void preciceInit() {
 void Init() {
     initialize = false;
     imu::Quaternion quat = bno.getQuat();
-    wallNormal = quat.rotateVector(xGlobal.invert());
+    wallNormal = quat.rotateVector(xGlobal);
     drillDir = wallNormal;
-    wall_Y = quat.rotateVector(yGlobal.invert());
-    wall_X = quat.rotateVector(zGlobal);
     Serial.print("X: ");
     Serial.print(wallNormal.x());
     Serial.print("\tY: ");
