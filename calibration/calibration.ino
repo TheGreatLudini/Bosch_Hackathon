@@ -7,6 +7,7 @@
 const uint8_t INTERRUPT_PIN = 2;
 const int numberOfIterations = 30;
 const int maxButton = 10;
+unsigned long lastInterrupt = 0;
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
 imu::Vector<3> xGlobal(1.0, 0.0, 0.0);
@@ -123,6 +124,9 @@ void loop() {
 }
 
 void storeAngles() {
-    interruptFlag = true;
-    buttonCounter++;
+    if (millis() - lastInterrupt > 60) {
+        interruptFlag = true;
+        buttonCounter++;
+        lastInterrupt = millis();
+    }
 }
