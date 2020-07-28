@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="AndroidLayouts">
-    <shared>
-      <config />
-    </shared>
+  <component name="AndroidLogFilters">
+    <option name="TOOL_WINDOW_CONFIGURED_FILTER" value="Show only selected application" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ba379d59-3257-4fc0-94b0-f6a73d042874" name="Default Changelist" comment="" />
@@ -25,17 +23,10 @@
       </state>
     </system>
   </component>
-  <component name="FileTemplateManagerImpl">
-    <option name="RECENT_TEMPLATES">
-      <list>
-        <option value="Class" />
-      </list>
-    </option>
-  </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
-  <component name="ProjectId" id="1fBPdY7uOWSlxT3ym77l1okbItP" />
+  <component name="ProjectId" id="1fHv5x5hZ8s4wwQirrKlUfkHbox" />
   <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="hideEmptyMiddlePackages" value="true" />
@@ -44,14 +35,6 @@
   </component>
   <component name="PropertiesComponent">
     <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
-    <property name="SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
-    <property name="android.sdk.path" value="$USER_HOME$/AppData/Local/Android/Sdk" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/../BluetoothLeGatt" />
-  </component>
-  <component name="RecentsManager">
-    <key name="android.template.2077558193">
-      <recent name="com.example.boostboxapp" />
-    </key>
   </component>
   <component name="RunManager">
     <configuration default="true" type="AndroidJUnit" factoryName="Android JUnit">
@@ -61,7 +44,7 @@
         <option name="Android.Gradle.BeforeRunTask" enabled="true" />
       </method>
     </configuration>
-    <configuration name="app" type="AndroidRunConfigurationType" factoryName="Android App">
+    <configuration name="app" type="AndroidRunConfigurationType" factoryName="Android App" activateToolWindowBeforeRun="false">
       <module name="app" />
       <option name="DEPLOY" value="true" />
       <option name="DEPLOY_APK_FROM_BUNDLE" value="false" />
@@ -119,33 +102,17 @@
   <component name="TaskManager">
     <task active="true" id="Default" summary="Default task">
       <changelist id="ba379d59-3257-4fc0-94b0-f6a73d042874" name="Default Changelist" comment="" />
-      <created>1595688600051</created>
+      <created>1595887653726</created>
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
-      <updated>1595688600051</updated>
+      <updated>1595887653726</updated>
     </task>
     <servers />
   </component>
   <component name="WindowStateProjectService">
-    <state x="371" y="88" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog" timestamp="1595760201820">
+    <state x="336" y="0" key="com.intellij.ide.util.TipDialog" timestamp="1595887884151">
       <screen x="0" y="0" width="1280" height="680" />
     </state>
-    <state x="371" y="88" key="#com.intellij.refactoring.safeDelete.UnsafeUsagesDialog/0.0.1280.680/0.-1080.1920.1040@0.0.1280.680" timestamp="1595760201820" />
-    <state x="421" y="82" key="FileChooserDialogImpl" timestamp="1595697140256">
-      <screen x="0" y="0" width="1280" height="680" />
-    </state>
-    <state x="421" y="82" key="FileChooserDialogImpl/0.0.1280.680@0.0.1280.680" timestamp="1595697140256" />
-    <state x="452" y="119" key="chooseDestDirectoryDialog" timestamp="1595757446439">
-      <screen x="0" y="0" width="1280" height="680" />
-    </state>
-    <state x="452" y="119" key="chooseDestDirectoryDialog/0.0.1280.680/0.-1080.1920.1040@0.0.1280.680" timestamp="1595757446439" />
-    <state x="93" y="93" width="1095" height="495" key="com.android.tools.idea.avdmanager.AvdListDialog" timestamp="1595688895504">
-      <screen x="0" y="0" width="1280" height="680" />
-    </state>
-    <state x="93" y="93" width="1095" height="495" key="com.android.tools.idea.avdmanager.AvdListDialog/0.0.1280.680@0.0.1280.680" timestamp="1595688895504" />
-    <state x="298" y="151" key="run.anything.popup" timestamp="1595694700518">
-      <screen x="0" y="0" width="1280" height="680" />
-    </state>
-    <state x="298" y="151" key="run.anything.popup/0.0.1280.680@0.0.1280.680" timestamp="1595694700518" />
+    <state x="336" y="0" key="com.intellij.ide.util.TipDialog/0.0.1280.680@0.0.1280.680" timestamp="1595887884151" />
   </component>
 </project>
