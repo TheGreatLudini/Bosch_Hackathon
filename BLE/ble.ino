@@ -1,9 +1,9 @@
-#include <Wire.h>
+ #include <Wire.h>
 #include <Arduino.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
 #include <utility/imumaths.h>
-#include <ArduinoBLE.h>
+//#include <ArduinoBLE.h>
 
 
 #include "config.h"
@@ -14,10 +14,10 @@
 //#define DEBUG_TOTAL_ERROR
 //#define DEBUG_ERROR_DIR
  #define DEBUG_CURRENT
- #define DEBUG_ACCELERATION
+ //#define DEBUG_ACCELERATION
 
 //#define DEBUG_BLE
-#define DEBUG_BLE_RECIVE
+//#define DEBUG_BLE_RECIVE
 
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
@@ -98,7 +98,7 @@ void setup() {
 
     memset(motorCurrentHistory, 0, FILTERLENGTH * 8);
     attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), setAngle, FALLING);
-    initBLE();
+    //initBLE();
     Serial.println("Setup done");
 }
     
@@ -108,7 +108,7 @@ void loop(void)
     double voltage = VoltageMeasurment();
     bno.getEvent(&accelerationData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
     
-    loopBLE(); 
+    //loopBLE(); 
 
     // -------------------
     // handel Initializations if those are set in the set angle interrupt
@@ -227,10 +227,10 @@ double VoltageMeasurment() {
     uint16_t voltBack = analogRead(VOLT_BACK_PIN);
     if (voltForw > voltBack) {
         forwardDir = true;
-        voltageHistory[counter % FILTERLENGTH] = VOLTAGE_FACTOR * (voltForw - voltBack);
+        voltageHistory[counter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltForw - voltBack);
     } else {
         forwardDir = false;
-        voltageHistory[counter % FILTERLENGTH] = VOLTAGE_FACTOR * (voltBack - voltForw);
+        voltageHistory[counter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltBack - voltForw);
     }    
     for (int i = 0; i < VOLT_FILTERLENGTH; i++) {
         voltage += voltageHistory[i];
@@ -239,7 +239,7 @@ double VoltageMeasurment() {
     voltCounter++;
     #ifdef DEBUG_CURRENT
         Serial.print("\tU :");
-        Serial.print(voltage);
+        Serial.println(voltage);
     #endif
     return voltage;
 
@@ -281,9 +281,7 @@ void preciceInit() {
     wallNormal = quat.rotateVector(Zvector);
     wall_Y = quat.rotateVector(Yvector);
     wall_X = quat.rotateVector(Xvector);
-    double phi = ANGLE_DISPLACEMENT / 180 * 3.1416;
-    imu::Quaternion rotQuat(cos(phi / 2), wall_Y.scale(sin(phi / 2)));
-    wallNormal = rotQuat.rotateVector(wallNormal);
+    wallNormal = RotDir(ANGLE_DISPLACEMENT, wall_Z, wallNormal);
     Serial.print("X: ");
     Serial.print(wallNormal.x());
     Serial.print("\tY: ");
@@ -349,130 +347,130 @@ void matrixMultip(double* matA, double* matB, double* matResult, int m, int p, i
     }
 }
 
-void initBLE(){
+// void initBLE(){
 
-    // begin initialization
-    if (!BLE.begin()) {
-        Serial.println("starting BLE failed!");
-        while (1);
-    }
+//     // begin initialization
+//     if (!BLE.begin()) {
+//         Serial.println("starting BLE failed!");
+//         while (1);
+//     }
 
-    /* Set a local name for the BLE device
-        This name will appear in advertising packets
-        and can be used by remote devices to identify this BLE device
-        The name can be changed but maybe be truncated based on space left in advertisement packet
-    */
-    BLE.setEventHandler(BLEConnected, ConnectHandler);
-    BLE.setEventHandler(BLEDisconnected, DisconnectHandler);
-    BLE.setLocalName("Schraubenmaster4000");
-    Serial.println("BLE name set");
-    Serial.println(BLE.address());
-
-
-    //BLE.setAdvertisedService(angleService); // add the service UUID
-
-    angleService.addCharacteristic(SetAngleCharLR); // add the battery level characteristic
-    angleService.addCharacteristic(SetAngleCharUD); // add the battery level characteristic
-    angleService.addCharacteristic(SendScalarUD); // add the battery level characteristic
-    angleService.addCharacteristic(SendScalarLR); // add the battery level characteristic
-    angleService.addCharacteristic(CalibrateChar); // add the battery level characteristic
+//     /* Set a local name for the BLE device
+//         This name will appear in advertising packets
+//         and can be used by remote devices to identify this BLE device
+//         The name can be changed but maybe be truncated based on space left in advertisement packet
+//     */
+//     BLE.setEventHandler(BLEConnected, ConnectHandler);
+//     BLE.setEventHandler(BLEDisconnected, DisconnectHandler);
+//     BLE.setLocalName("Schraubenmaster4000");
+//     Serial.println("BLE name set");
+//     Serial.println(BLE.address());
 
 
-    BLE.addService(angleService);
+//     //BLE.setAdvertisedService(angleService); // add the service UUID
 
-    SetAngleCharLR.writeValue(1111111111); // set initial value for this characteristic
-    SetAngleCharUD.writeValue(1111111111); // set initial value for this characteristic
-    SendScalarLR.writeValue(1111111111); // set initial value for this characteristic
-    SendScalarUD.writeValue(1111111111); // set initial value for this characteristic
-    CalibrateChar.writeValue(0); // set initial value for this characteristic
+//     angleService.addCharacteristic(SetAngleCharLR); // add the battery level characteristic
+//     angleService.addCharacteristic(SetAngleCharUD); // add the battery level characteristic
+//     angleService.addCharacteristic(SendScalarUD); // add the battery level characteristic
+//     angleService.addCharacteristic(SendScalarLR); // add the battery level characteristic
+//     angleService.addCharacteristic(CalibrateChar); // add the battery level characteristic
 
 
-    // start advertising
-    BLE.advertise();
+//     BLE.addService(angleService);
 
-    Serial.println("Bluetooth device active, waiting for connections...");
+//     SetAngleCharLR.writeValue(1111111111); // set initial value for this characteristic
+//     SetAngleCharUD.writeValue(1111111111); // set initial value for this characteristic
+//     SendScalarLR.writeValue(1111111111); // set initial value for this characteristic
+//     SendScalarUD.writeValue(1111111111); // set initial value for this characteristic
+//     CalibrateChar.writeValue(0); // set initial value for this characteristic
+
+
+//     // start advertising
+//     BLE.advertise();
+
+//     Serial.println("Bluetooth device active, waiting for connections...");
     
-}
+// }
 
-void loopBLE(){
-    // wait for a BLE central
-    BLEDevice central = BLE.central();
+// void loopBLE(){
+//     // wait for a BLE central
+//     BLEDevice central = BLE.central();
     
     
-    // if a central is connected to the peripheral:
-    if (central) {
+//     // if a central is connected to the peripheral:
+//     if (central) {
         
-        // #ifdef DEBUG_BLE
-        // Serial.print("Connected to central: ");
-        // // print the central's BT address:
-        // Serial.println(central.address());
-        // #endif
-        if(CalibrateChar.written()) {
-            preciceInit();
-        }
-        double LR(0);
-        double UD(0);
-        bool newDrillAngle = false;
-        if(SetAngleCharLR.written()){
-            newDrillAngle = true;
-            double LR = SetAngleCharLR.value(); 
-            #ifdef DEBUG_BLE_RECIVE
-            Serial.print("recived LR: ");
-            Serial.println(LR);
-            #endif
-        }
-        if(SetAngleCharUD.written()) {
-            newDrillAngle = true;
-            double UD = SetAngleCharLR.value(); 
-            #ifdef DEBUG_BLE_RECIVE
-            Serial.print("recived UD: ");
-            Serial.println(UD);
-            #endif
-        }
-        if (newDrillAngle) {
-            drillDir = wallNormal;
-            drillDir = RotDir(LR, wall_X, drillDir);
-            drillDir = RotDir(UD, wall_Y, drillDir);
-        }
-        if (abs(millis() - lastSendTime) > 500) {
-            SendScalarUD.writeValue((float)localUpDownError);
-            // Serial.println("I wrote a value to BLE char.");
-            // SendScalarUD.valueUpdated();
-            SendScalarLR.writeValue((float)localLeftRightError);
-            lastSendTime = millis();
-        }
-        #ifdef DEBUG_BLE
-            Serial.print("Send UD: ");
-            Serial.print((float)localUpDownError);
-            Serial.print("\tSend LR: ");
-            Serial.println((float)localUpDownError);
-        #endif
+//         // #ifdef DEBUG_BLE
+//         // Serial.print("Connected to central: ");
+//         // // print the central's BT address:
+//         // Serial.println(central.address());
+//         // #endif
+//         if(CalibrateChar.written()) {
+//             preciceInit();
+//         }
+//         double LR(0);
+//         double UD(0);
+//         bool newDrillAngle = false;
+//         if(SetAngleCharLR.written()){
+//             newDrillAngle = true;
+//             double LR = SetAngleCharLR.value(); 
+//             #ifdef DEBUG_BLE_RECIVE
+//             Serial.print("recived LR: ");
+//             Serial.println(LR);
+//             #endif
+//         }
+//         if(SetAngleCharUD.written()) {
+//             newDrillAngle = true;
+//             double UD = SetAngleCharLR.value(); 
+//             #ifdef DEBUG_BLE_RECIVE
+//             Serial.print("recived UD: ");
+//             Serial.println(UD);
+//             #endif
+//         }
+//         if (newDrillAngle) {
+//             drillDir = wallNormal;
+//             drillDir = RotDir(LR, wall_X, drillDir);
+//             drillDir = RotDir(UD, wall_Y, drillDir);
+//         }
+//         if (abs(millis() - lastSendTime) > 500) {
+//             SendScalarUD.writeValue((float)localUpDownError);
+//             // Serial.println("I wrote a value to BLE char.");
+//             // SendScalarUD.valueUpdated();
+//             SendScalarLR.writeValue((float)localLeftRightError);
+//             lastSendTime = millis();
+//         }
+//         #ifdef DEBUG_BLE
+//             Serial.print("Send UD: ");
+//             Serial.print((float)localUpDownError);
+//             Serial.print("\tSend LR: ");
+//             Serial.println((float)localUpDownError);
+//         #endif
 
-    }
-    if(CalibrateChar.written()){
-        CalibrateChar.writeValue(0);
-    }
-}
+//     }
+//     if(CalibrateChar.written()){
+//         CalibrateChar.writeValue(0);
+//     }
+// }
 
-/**
- * Encodes Values that are send over BLE 
- * 2 values with 5 digits each 
- * first digit: 1 -> positve value 
- *              0 -> negative Value
- */
-unsigned int encodeValue(double leftRight, double upDown) {
-    uint32_t LR = abs(leftRight) * 1000;
-    uint32_t UD = abs(upDown) * 1000;
-    leftRight > 0 ? LR += 10000 : LR = LR;
-    upDown > 0 ? UD += 10000 : UD = UD;
-    uint32_t retVal = (LR * 100000) + UD;
+// /**
+//  * Encodes Values that are send over BLE 
+//  * 2 values with 5 digits each 
+//  * first digit: 1 -> positve value 
+//  *              0 -> negative Value
+//  */
+// unsigned int encodeValue(double leftRight, double upDown) {
+//     uint32_t LR = abs(leftRight) * 1000;
+//     uint32_t UD = abs(upDown) * 1000;
+//     leftRight > 0 ? LR += 10000 : LR = LR;
+//     upDown > 0 ? UD += 10000 : UD = UD;
+//     uint32_t retVal = (LR * 100000) + UD;
 
-    #ifdef DEBUG_BLE
-        Serial.print("LR_Error: ");
-        Serial.print(localLeftRightError);
-        Serial.print("\tUD_Error: ");
-        Serial.println(localUpDownError);
-        Serial.println(retVal);
-    #endif
-    return retVal;
-}
+//     #ifdef DEBUG_BLE
+//         Serial.print("LR_Error: ");
+//         Serial.print(localLeftRightError);
+//         Serial.print("\tUD_Error: ");
+//         Serial.println(localUpDownError);
+//         Serial.println(retVal);
+//     #endif
+//     return retVal;
+// }
