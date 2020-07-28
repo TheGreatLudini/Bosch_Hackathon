@@ -145,7 +145,7 @@ void loop(void)
     // set Leds and Motorspeed acording to misalignment
     uint8_t motorSpeed(0);
     if (localErrorTotal < MOTOR_ON_THESHOLD) {
-        motorSpeed = 255 - (localErrorTotal * 100 / 30 * 255);
+        motorSpeed = max(0, 255 - (localErrorTotal * 100 / 30 * 255));
     }
     digitalWrite(MOTOR_SPEED_PIN, LOW);
     // analogWrite(MOTOR_SPEED_PIN, 255 - motorSpeed);
@@ -322,27 +322,6 @@ imu::Vector<3> RotDir(double angle, imu::Vector<3> rotAxis, imu::Vector<3> VecTo
     return rotQuat.rotateVector(VecToRotate);
 }
 
-/**
- * Multiplies two matrices with arbitrary dimensions
- * Matrix A has dimensions m x p
- * Matrix B has dimensions q x n
- * p == q is required
- * @param matResult The resulting matrix after multiplication
- */
-void matrixMultip(double* matA, double* matB, double* matResult, int m, int p, int q, int n) {
-    
-    if (p == q) {
-        for (int i = 0; i < m; i++) {
-            for (int j = 0; j < n; j++) {
-                matResult[n * i + j] = 0;
-			    for (int k = 0; k < p; k++)
-				    matResult[n * i + j] = matResult[n * i + j] + matA[p * i + k] * matB[n * k + j];
-            }
-        }
-    } else {
-        Serial.println("Matrix dimensions do not match!");
-    }
-}
 
 // void initBLE(){
 
