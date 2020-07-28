@@ -149,9 +149,10 @@ void loop(void)
     // set Leds and Motorspeed acording to misalignment
     uint8_t motorSpeed(0);
     if (localErrorTotal < MOTOR_ON_THESHOLD) {
-        motorSpeed = max(0, 255 - (localErrorTotal * 100 / 30 * 255));
+        // The higher this motor speed variable, the slower the motor unfortunately
+        motorSpeed = localErrorTotal * 255 // localErrorTotal < 0.3 anyway
     }
-    digitalWrite(MOTOR_SPEED_PIN, LOW);
+    digitalWrite(MOTOR_SPEED_PIN, motorSpeed);
     // analogWrite(MOTOR_SPEED_PIN, 255 - motorSpeed);
 
     setLeds(localLeftRightError, localUpDownError, localErrorTotal);
