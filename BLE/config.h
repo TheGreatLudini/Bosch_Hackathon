@@ -31,8 +31,12 @@ const double CENTER_LED_ON_THESHOLD(0.15);
 
 // IMU Calibration in degree
 // TODO to be determined
-const float Y_AXIS_OFFSET(0.2); 
-const float Z_AXIS_OFFSET(0.2); 
+imu::Vector<3> xGlobal(1.0, 0.0, 0.0);
+imu::Vector<3> yGlobal(0.0, 1.0, 0.0);
+imu::Vector<3> zGlobal(0.0, 0.0, 1.0);
+// imu::Vector<3> xGlobal(-0.05023, 0.01451, -0.99862);
+// imu::Vector<3> yGlobal(0.01260, 0.00079, 0.01389);
+// imu::Vector<3> zGlobal(0.99861, -0.01188, -0.05040);
 
 // Current measurement
 #define CURRENT_SENSE_PIN A6
@@ -45,6 +49,8 @@ const double VOLTAGE_FACTOR = REF_VOLTAGE * 5.7 / 1023; // 47k und 10k Wiederst√
 
 const uint16_t FILTERLENGTH(50);
 const uint16_t VOLT_FILTERLENGTH(30);
+const double VOLT_TRIGGER_TH(3.0);
+const uint32_t TRIGGER_DEBOUNCE(20);
 
 const uint32_t debounce(10); // 20 ms debounce time to prevent flickerining
 

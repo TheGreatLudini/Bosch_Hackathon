@@ -9,12 +9,12 @@
 #include "config.h"
 //#include "Motor.h"
     
-// #define DEBUG_LOCAL_VECTOR
+ #define DEBUG_LOCAL_VECTOR
 // #define DEBUG_MOTOR
 //#define DEBUG_TOTAL_ERROR
 //#define DEBUG_ERROR_DIR
- #define DEBUG_CURRENT
- //#define DEBUG_ACCELERATION
+//#define DEBUG_CURRENT
+//#define DEBUG_ACCELERATION
 
 //#define DEBUG_BLE
 //#define DEBUG_BLE_RECIVE
@@ -30,6 +30,7 @@ imu::Vector<3> drillDir(0.0, 0.0, 0.0);
 imu::Vector<3> wallNormal(0.0, 0.0, 0.0);
 imu::Vector<3> wall_X(0.0, 0.0, 0.0);
 imu::Vector<3> wall_Y(0.0, 0.0, 0.0);
+imu::Vector<3> wall_Z(0.0, 0.0, 0.0);
 bool initialize = true;
 bool preciceInitialize = false;
 bool initGuard = false;
@@ -104,12 +105,17 @@ void setup() {
     
 void loop(void) 
 {   
+    
     double motorCurrent = CurrentMeasurment();
     double voltage = VoltageMeasurment();
     bno.getEvent(&accelerationData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
     
     //loopBLE(); 
+    //-------------------
+    // Triggerdetection
+    if(voltage > TRIGGER_DEBOUNCE) {
 
+    }
     // -------------------
     // handel Initializations if those are set in the set angle interrupt
     if (!initGuard) {
@@ -118,15 +124,12 @@ void loop(void)
         } else if (initialize) {
             Init();
         }
-    } else if (abs(millis() - interruptTime) > 2 * debounce) {
+    } else if (abs(millis() - interruptTime) > 500) {
         initGuard = false;
     }
     // -------------------
     // calculate misalignment/errors
     imu::Quaternion quat = bno.getQuat();
-    imu::Vector<3> xGlobal(1.0, 0.0, 0.0);
-    imu::Vector<3> yGlobal(0.0, 1.0, 0.0);
-    imu::Vector<3> zGlobal(0.0, 0.0, 1.0);
     // Coordinate system axes of screw driver in global coordinates, x is drilling axis:
     imu::Vector<3> xLocal = quat.rotateVector(xGlobal);
     imu::Vector<3> yLocal = quat.rotateVector(yGlobal);
@@ -164,13 +167,13 @@ void loop(void)
     #endif
 
     #ifdef DEBUG_LOCAL_VECTOR
-    Serial.print("Alpha: ");
-    Serial.print(quat.toEuler().x() / 3.1416 * 180);
-    Serial.print("\tBeta: ");
-    Serial.print(quat.toEuler().y() / 3.1416 * 180);
-    Serial.print("\tGamma: ");
-    Serial.println(quat.toEuler().z() / 3.1416 * 180);
-    Serial.print("X: ");
+    // Serial.print("Alpha: ");
+    // Serial.print(quat.toEuler().x() / 3.1416 * 180);
+    // Serial.print("\tBeta: ");
+    // Serial.print(quat.toEuler().y() / 3.1416 * 180);
+    // Serial.print("\tGamma: ");
+    // Serial.print(quat.toEuler().z() / 3.1416 * 180);
+    Serial.print("\tX: ");
     Serial.print(xLocal.x());
     Serial.print("\tY: ");
     Serial.print(yLocal.y());
@@ -195,13 +198,13 @@ void setAngle()
         interruptCounter++;
         preciceInitialize = true;
         initGuard = true;
+        interruptTime = millis();
     } else if (abs(millis() - interruptTime) > debounce) {
         interruptCounter = 0;
         preciceInitialize = false;
         initialize = true;
+        interruptTime = millis();
     }
-
-    interruptTime = millis();
     //Serial.println("Initializing");
 }
 
@@ -275,13 +278,10 @@ void setLeds(double localLeftRightError, double localUpDownError, double localEr
 void preciceInit() {
     preciceInitialize = false;
     imu::Quaternion quat = bno.getQuat();
-    imu::Vector<3> Xvector(1.0, 0, 0);
-    imu::Vector<3> Yvector(0, 1.0, 0);
-    imu::Vector<3> Zvector(0, 0, 1.0);
-    wallNormal = quat.rotateVector(Zvector);
-    wall_Y = quat.rotateVector(Yvector);
-    wall_X = quat.rotateVector(Xvector);
-    wallNormal = RotDir(ANGLE_DISPLACEMENT, wall_Z, wallNormal);
+    wallNormal = quat.rotateVector(yGlobal.invert());
+    wall_X = quat.rotateVector(xGlobal.invert());
+    wall_Z = quat.rotateVector(zGlobal);
+    wallNormal = RotDir(ANGLE_DISPLACEMENT, quat.rotateVector(zGlobal).invert(), wallNormal);
     Serial.print("X: ");
     Serial.print(wallNormal.x());
     Serial.print("\tY: ");
@@ -298,13 +298,10 @@ void preciceInit() {
 void Init() {
     initialize = false;
     imu::Quaternion quat = bno.getQuat();
-    imu::Vector<3> Xvector(1.0, 0, 0);
-    imu::Vector<3> Yvector(0, 1.0, 0);
-    imu::Vector<3> Zvector(0, 0, 1.0);
-    wallNormal = quat.rotateVector(Xvector);
+    wallNormal = quat.rotateVector(xGlobal.invert());
     drillDir = wallNormal;
-    wall_Y = quat.rotateVector(Zvector);
-    wall_X = quat.rotateVector(Yvector);
+    wall_Y = quat.rotateVector(yGlobal.invert());
+    wall_X = quat.rotateVector(zGlobal);
     Serial.print("X: ");
     Serial.print(wallNormal.x());
     Serial.print("\tY: ");
@@ -321,7 +318,7 @@ void Init() {
  */
 imu::Vector<3> RotDir(double angle, imu::Vector<3> rotAxis, imu::Vector<3> VecToRotate) {
     double phi = angle / 180 * 3.1416;
-    imu::Quaternion rotQuat(cos(phi / 2), wall_Y.scale(sin(phi / 2)));
+    imu::Quaternion rotQuat(cos(phi / 2), rotAxis.scale(sin(phi / 2)));
     return rotQuat.rotateVector(VecToRotate);
 }
 
