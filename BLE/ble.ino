@@ -15,6 +15,7 @@
 //#define DEBUG_CURRENT
 //#define DEBUG_ACCELERATION
 //#define DEBUG_INTERRUPT
+#define DEBUG_ANGLE_DISPLACEMENT_MOTOR
 
 //#define DEBUG_BLE
 //#define DEBUG_BLE_RECIVE
@@ -160,12 +161,16 @@ void loop(void)
     // set Leds and Motorspeed acording to misalignment
     uint8_t motorSpeed(0);
     if (localErrorTotal < MOTOR_ON_THESHOLD) {
-        Serial.print("Good ");
         // The higher this motor speed variable, the slower the motor unfortunately
         motorSpeed = min(localErrorTotal * MOTOR_SPEED_SENSITIVITY, 255); 
+        #ifdef DEBUG_ANGLE_DISPLACEMENT_MOTOR
+        Serial.print("Good ");
         Serial.println(motorSpeed);
+        #endif
     } else {
+        #ifdef DEBUG_ANGLE_DISPLACEMENT_MOTOR
         Serial.println("Bad");
+        #endif
         motorSpeed = 255;
     }
     analogWrite(MOTOR_SPEED_PIN, motorSpeed);
