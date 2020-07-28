@@ -12,10 +12,11 @@
 //#define DEBUG_MOTOR
 //#define DEBUG_TOTAL_ERROR
 //#define DEBUG_ERROR_DIR
-//#define DEBUG_CURRENT
+#define DEBUG_CURRENT
 //#define DEBUG_ACCELERATION
 //#define DEBUG_INTERRUPT
-#define DEBUG_ANGLE_DISPLACEMENT_MOTOR
+//#define DEBUG_ANGLE_DISPLACEMENT_MOTOR
+#define DEBUG_TRIGGER
 
 //#define DEBUG_BLE
 //#define DEBUG_BLE_RECIVE
@@ -29,9 +30,6 @@ const uint32_t BLACK = strip.Color(0, 0, 0);
 
 imu::Vector<3> drillDir(0.0, 0.0, 0.0);
 imu::Vector<3> wallNormal(0.0, 0.0, 0.0);
-imu::Vector<3> wall_X(0.0, 0.0, 0.0);
-imu::Vector<3> wall_Y(0.0, 0.0, 0.0);
-imu::Vector<3> wall_Z(0.0, 0.0, 0.0);
 bool initialize = true;
 bool preciceInitialize = false;
 bool initGuard = false;
@@ -51,6 +49,9 @@ double localLeftRightError;
 double localUpDownError;
 
 uint32_t lastSendTime = 0;
+
+bool lastTriggerState = false;
+bool currentTriggerState = false;
 
 //Motor myMotor = new Motor(MOTOR_FOR_DIR_PIN, MOTOR_BACK_DIR_PIN, MOTOR_SPEED_PIN);
     
@@ -117,12 +118,19 @@ void loop(void)
     if ((buttonState != buttonStateOld) && !buttonState) {
         setAngle();
     }
+    double motorCurrent = CurrentMeasurment();
+    double voltage = VoltageMeasurment();
+
+    lastTriggerState = currentTriggerState; 
+    currentTriggerState = voltage > TRIGGER_VOLTAGE_TH;
+    if ((currentTriggerState != lastTriggerState) && !currentTriggerState) {
+        setAngle();
+    }
 
     //if (digitalRead(INTERRUPT_PIN) == LOW) {
         //setAngle();
     //}
-    double motorCurrent = CurrentMeasurment();
-    double voltage = VoltageMeasurment();
+    
     bno.getEvent(&accelerationData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
     
     //loopBLE(); 
@@ -257,21 +265,29 @@ double VoltageMeasurment() {
     double voltage(0);
     uint16_t voltForw = analogRead(VOLT_FOR_PIN); 
     uint16_t voltBack = analogRead(VOLT_BACK_PIN);
-    if (voltForw > voltBack) {
-        forwardDir = true;
-        voltageHistory[voltCounter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltForw - voltBack);
-    } else {
-        forwardDir = false;
-        voltageHistory[voltCounter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltBack - voltForw);
-    }    
+    forwardDir = true;
+    voltageHistory[voltCounter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltForw);
+    
+    // if (voltForw > voltBack) {
+    //     forwardDir = true;
+    //     voltageHistory[voltCounter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltForw - voltBack);
+    // } else {
+    //     forwardDir = false;
+    //     voltageHistory[voltCounter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltBack - voltForw);
+    // }    
     for (int i = 0; i < VOLT_FILTERLENGTH; i++) {
         voltage += voltageHistory[i];
     }
     voltage /= VOLT_FILTERLENGTH;
     voltCounter++;
     #ifdef DEBUG_CURRENT
-        Serial.print("\tU :");
+        Serial.print("\tU_FOR :");
         Serial.println(voltage);
+        // Serial.print("\tU_BACK :");
+        // Serial.println(VOLTAGE_FACTOR * voltBack);
+        // Serial.print("\tU :");
+        // Serial.println(voltage);
+
     #endif
     return voltage;
 

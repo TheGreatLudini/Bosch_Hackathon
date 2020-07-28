@@ -49,14 +49,14 @@ const double CURRENT_FACTOR = REF_VOLTAGE / (1023 * GAIN * SENSE_RESISTANCE);
 const double VOLTAGE_FACTOR = REF_VOLTAGE * 5.7 / 1023; // 47k und 10k Wiederstäde im Spannungsteiler
 
 const uint16_t FILTERLENGTH(50);
-const uint16_t VOLT_FILTERLENGTH(30);
+const uint16_t VOLT_FILTERLENGTH(10);
 const double VOLT_TRIGGER_TH(3.0);
 const uint32_t TRIGGER_DEBOUNCE(20);
 
 const uint32_t debounce(10); // 20 ms debounce time to prevent flickerining
 
-
-
+const double TRIGGER_VOLTAGE_TH(3); 
+const uint32_t TRIGGER_ON_TIME(20);
 //Functions
 void setAngle();
 double CurrentMeasurment();
