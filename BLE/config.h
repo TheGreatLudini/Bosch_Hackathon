@@ -11,6 +11,7 @@
 #endif
 const uint8_t INTERRUPT_PIN = 2;
 
+
 //LEDStuff
 const uint8_t LED_PIN(11);
 const uint8_t LED_COUNT(5);
@@ -48,15 +49,16 @@ const double SENSE_RESISTANCE(0.002);
 const double CURRENT_FACTOR = REF_VOLTAGE / (1023 * GAIN * SENSE_RESISTANCE);
 const double VOLTAGE_FACTOR = REF_VOLTAGE * 5.7 / 1023; // 47k und 10k Wiederstäde im Spannungsteiler
 
+#define TRIGGER_PIN A0
 const uint16_t FILTERLENGTH(50);
 const uint16_t VOLT_FILTERLENGTH(10);
-const double VOLT_TRIGGER_TH(3.0);
+const uint16_t VOLT_TRIGGER_TH(500); // analog read value (0-1023) for trigger threshold, the higher the less sensitive
 const uint32_t TRIGGER_DEBOUNCE(20);
+const uint32_t TRIGGER_MAX_DUR(500); // maximum time between trigger push and release
+const uint32_t TRIGGER_MIN_DUR(50); // minimum time between trigger push and release
 
 const uint32_t debounce(10); // 20 ms debounce time to prevent flickerining
 
-const double TRIGGER_VOLTAGE_TH(3); 
-const uint32_t TRIGGER_ON_TIME(20);
 //Functions
 void setAngle();
 double CurrentMeasurment();
