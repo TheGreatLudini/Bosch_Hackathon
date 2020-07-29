@@ -104,7 +104,7 @@ void setup() {
     pinMode(VOLT_FOR_PIN, INPUT);
 
     memset(motorCurrentHistory, 0, FILTERLENGTH * 8);
-    // attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), onInterrupt, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), onInterrupt, CHANGE);
     //initBLE();
     Serial.println("Setup done");
 }
@@ -186,7 +186,6 @@ void loop(void)
         motorSpeed = 255;
     }
     analogWrite(MOTOR_SPEED_PIN, motorSpeed);
-    // analogWrite(MOTOR_SPEED_PIN, 255 - motorSpeed);
 
     setLeds(localLeftRightError, localUpDownError, localErrorTotal);
     
@@ -249,30 +248,30 @@ void setAngle()
         //Serial.println("Initializing");    
 }
 
-// void onInterrupt()
-// {
-//     #ifdef DEBUG_INTERRUPT
-//     Serial.println("Interrupt was made!");
-//     #endif
-//         bool rising = digitalRead(INTERRUPT_PIN);
-//         if (!rising) {
-//             buttonPressDown = millis();
-//         } else if (millis() - buttonPressDown > LONG_PRESS_TIME ){
-//             if (drillAngleChanged) {
-//                 drillDir = wallNormal;
-//             } else {
-//                 drillDir = RotDir(45, wallZ, wallNormal);
-//             }
-//             drillAngleChanged = !drillAngleChanged; 
-//             if (drillAngleChanged) {
-//                 strip.setPixelColor(LedTop, ORANGE);
-//                 Serial.println("DrillAngle now at 45 degree to the Wall"); 
-//             } else {
-//                 strip.setPixelColor(LedTop, GREEN); 
-//                 Serial.println("DrillAngle now at 90 degree to the Wall"); 
-//             }
-//         }  
-// }
+void onInterrupt()
+{
+    #ifdef DEBUG_INTERRUPT
+    Serial.println("Interrupt was made!");
+    #endif
+        bool rising = digitalRead(INTERRUPT_PIN);
+        if (!rising) {
+            buttonPressDown = millis();
+        } else if (millis() - buttonPressDown > LONG_PRESS_TIME ){
+            if (drillAngleChanged) {
+                drillDir = wallNormal;
+            } else {
+                drillDir = RotDir(45, wallZ, wallNormal);
+            }
+            drillAngleChanged = !drillAngleChanged; 
+            if (drillAngleChanged) {
+                strip.setPixelColor(LedTop, ORANGE);
+                Serial.println("DrillAngle now at 45 degree to the Wall"); 
+            } else {
+                strip.setPixelColor(LedTop, GREEN); 
+                Serial.println("DrillAngle now at 90 degree to the Wall"); 
+            }
+        }  
+}
 
 double CurrentMeasurment() {
     double motorCurrent(0);
@@ -336,6 +335,8 @@ void initSequLed(uint32_t color) {
     strip.setPixelColor(LedTop, color);
     strip.show();
     delay(500);
+    strip.clear();
+    strip.show();
 }
 
 void setLeds(double localLeftRightError, double localUpDownError, double localErrorTotal) {
