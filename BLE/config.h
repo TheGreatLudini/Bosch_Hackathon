@@ -15,6 +15,7 @@ const uint8_t INTERRUPT_PIN = 2;
 //LEDStuff
 const uint8_t LED_PIN(11);
 const uint8_t LED_COUNT(5);
+const float CENTER_LED_DECREASE(4.5);
 enum Leds : uint8_t {
     LedCenter,
     LedRight,
