@@ -40,9 +40,6 @@ const double CENTER_LED_ON_THESHOLD = MOTOR_ON_THESHOLD;
 imu::Vector<3> xGlobal(1.0, 0.0, 0.0);
 imu::Vector<3> yGlobal(0.0, 1.0, 0.0);
 imu::Vector<3> zGlobal(0.0, 0.0, 1.0);
-// imu::Vector<3> zGlobal(0.05023, -0.01451, 0.99862);
-// imu::Vector<3> yGlobal(0.01260, 0.99979, 0.01389);
-// imu::Vector<3> xGlobal(0.99861, -0.01188, -0.05040);
 
 // Current measurement
 #define CURRENT_SENSE_PIN A6
