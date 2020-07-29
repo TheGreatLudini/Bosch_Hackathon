@@ -106,7 +106,7 @@ void setup() {
     pinMode(TRIGGER_PIN, INPUT);
     pinMode(CURRENT_SENSE_PIN, INPUT);
     pinMode(MOTOR_SPEED_PIN, OUTPUT);
-    pinMode(VOLT_BACK_PIN, INPUT);
+    //pinMode(VOLT_BACK_PIN, INPUT);
     pinMode(VOLT_FOR_PIN, INPUT);
 
     memset(motorCurrentHistory, 0, FILTERLENGTH * 8);
@@ -274,7 +274,7 @@ double CurrentMeasurment() {
 double VoltageMeasurment() {
     double voltage(0);
     uint16_t voltForw = analogRead(VOLT_FOR_PIN); 
-    uint16_t voltBack = analogRead(VOLT_BACK_PIN);
+    //uint16_t voltBack = analogRead(VOLT_BACK_PIN);
     forwardDir = true;
     voltageHistory[voltCounter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltForw);
     
