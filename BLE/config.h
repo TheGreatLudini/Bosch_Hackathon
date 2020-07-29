@@ -10,7 +10,7 @@
     const float REF_VOLTAGE(3.3);
 #endif
 const uint8_t INTERRUPT_PIN = 2;
-const uint32_t LONG_PRESS_TIME(500);
+const uint32_t LONG_PRESS_TIME(400);
 
 
 //LEDStuff
