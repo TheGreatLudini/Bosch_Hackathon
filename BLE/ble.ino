@@ -57,11 +57,7 @@ double localLeftRightError;
 double localUpDownError;
 
 uint32_t lastSendTime = 0;
-
-
-
-//Motor myMotor = new Motor(MOTOR_FOR_DIR_PIN, MOTOR_BACK_DIR_PIN, MOTOR_SPEED_PIN);
-    
+ 
 void setup() {
     pinMode(LED_BUILTIN, OUTPUT);
     Serial.begin(9600);
@@ -105,7 +101,7 @@ void setup() {
 
     memset(motorCurrentHistory, 0, FILTERLENGTH * 8);
     // attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), onInterrupt, CHANGE);
-    //initBLE();
+    // initBLE();
     Serial.println("Setup done");
 }
     
@@ -135,11 +131,6 @@ void loop(void)
     bno.getEvent(&accelerationData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
     
     //loopBLE(); 
-    //-------------------
-    // Triggerdetection
-    if(voltage > TRIGGER_DEBOUNCE) {
-   
-    }
     // -------------------
     // handel Initializations if those are set in the set angle interrupt
     if (!initGuard) {
@@ -186,7 +177,6 @@ void loop(void)
         motorSpeed = 255;
     }
     analogWrite(MOTOR_SPEED_PIN, motorSpeed);
-    // analogWrite(MOTOR_SPEED_PIN, 255 - motorSpeed);
 
     setLeds(localLeftRightError, localUpDownError, localErrorTotal);
     
@@ -223,8 +213,6 @@ void loop(void)
     Serial.print("\taccX: ");
     Serial.println(accelerationData.acceleration.x);
     #endif
-
-    //delay(100);
 }
 
 void setAngle()
@@ -249,30 +237,6 @@ void setAngle()
         //Serial.println("Initializing");    
 }
 
-// void onInterrupt()
-// {
-//     #ifdef DEBUG_INTERRUPT
-//     Serial.println("Interrupt was made!");
-//     #endif
-//         bool rising = digitalRead(INTERRUPT_PIN);
-//         if (!rising) {
-//             buttonPressDown = millis();
-//         } else if (millis() - buttonPressDown > LONG_PRESS_TIME ){
-//             if (drillAngleChanged) {
-//                 drillDir = wallNormal;
-//             } else {
-//                 drillDir = RotDir(45, wallZ, wallNormal);
-//             }
-//             drillAngleChanged = !drillAngleChanged; 
-//             if (drillAngleChanged) {
-//                 strip.setPixelColor(LedTop, ORANGE);
-//                 Serial.println("DrillAngle now at 45 degree to the Wall"); 
-//             } else {
-//                 strip.setPixelColor(LedTop, GREEN); 
-//                 Serial.println("DrillAngle now at 90 degree to the Wall"); 
-//             }
-//         }  
-// }
 
 double CurrentMeasurment() {
     double motorCurrent(0);
@@ -310,13 +274,8 @@ double VoltageMeasurment() {
     voltage /= VOLT_FILTERLENGTH;
     voltCounter++;
     #ifdef DEBUG_CURRENT
-        Serial.print("\tU_FOR :");
+        Serial.print("\tU :");
         Serial.println(voltage);
-        // Serial.print("\tU_BACK :");
-        // Serial.println(VOLTAGE_FACTOR * voltBack);
-        // Serial.print("\tU :");
-        // Serial.println(voltage);
-
     #endif
     return voltage;
 
