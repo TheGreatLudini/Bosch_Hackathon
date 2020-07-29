@@ -10,18 +10,20 @@
     const float REF_VOLTAGE(3.3);
 #endif
 const uint8_t INTERRUPT_PIN = 2;
+const uint32_t LONG_PRESS_TIME(500);
 
 
 //LEDStuff
 const uint8_t LED_PIN(11);
-const uint8_t LED_COUNT(5);
+const uint8_t LED_COUNT(6);
 const float CENTER_LED_DECREASE(4.5);
 enum Leds : uint8_t {
+    LedTop,
     LedCenter,
     LedRight,
     LedUp,
     LedLeft,
-    LedDown
+    LedDown  
 };
 
 // Motorcontrol
@@ -55,7 +57,7 @@ const uint16_t FILTERLENGTH(50);
 const uint16_t VOLT_FILTERLENGTH(10);
 const uint16_t VOLT_TRIGGER_TH(500); // analog read value (0-1023) for trigger threshold, the higher the less sensitive
 const uint32_t TRIGGER_DEBOUNCE(20);
-const uint32_t TRIGGER_MAX_DUR(500); // maximum time between trigger push and release
+const uint32_t TRIGGER_MAX_DUR(200); // maximum time between trigger push and release
 const uint32_t TRIGGER_MIN_DUR(50); // minimum time between trigger push and release
 
 const uint32_t debounce(10); // 20 ms debounce time to prevent flickerining

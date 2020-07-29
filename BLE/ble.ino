@@ -32,11 +32,15 @@ const uint32_t BLACK = strip.Color(0, 0, 0);
 
 imu::Vector<3> drillDir(0.0, 0.0, 0.0);
 imu::Vector<3> wallNormal(0.0, 0.0, 0.0);
+imu::Vector<3> wallZ(0.0, 0.0, 0.0);
 bool initialize = true;
 bool preciceInitialize = false;
 bool initGuard = false;
 uint32_t interruptTime(0);
 uint8_t interruptCounter(0);
+
+uint32_t buttonPressDown(0);
+bool drillAngleChanged = false;
 
 sensors_event_t accelerationData;
 double motorCurrentHistory[FILTERLENGTH]; 
@@ -65,17 +69,7 @@ void setup() {
     //init LEDs
     strip.begin();
     strip.setBrightness(20);
-    strip.fill(RED, 0 , LED_COUNT);
-    strip.show();
-    strip.clear();
-    strip.show();
-    for(int i = 1; i <= LED_COUNT; i++) {
-        strip.fill(RED, 0, i);
-	    strip.show();
-        delay(100);
-    }
-    strip.clear();
-    strip.setPixelColor(LedCenter, RED);
+    strip.fill(BLUE, 0 , LED_COUNT);
     strip.show();
 
     Serial.println("Orientation Sensor Test"); 
@@ -110,7 +104,7 @@ void setup() {
     pinMode(VOLT_FOR_PIN, INPUT);
 
     memset(motorCurrentHistory, 0, FILTERLENGTH * 8);
-    //attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), setAngle, LOW);
+    attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), onInterrupt, CHANGE);
     //initBLE();
     Serial.println("Setup done");
 }
@@ -255,6 +249,33 @@ void setAngle()
         //Serial.println("Initializing");    
 }
 
+void onInterrupt()
+{
+    #ifdef DEBUG_INTERRUPT
+    Serial.println("Interrupt was made!");
+    #endif
+    if (millis() - buttonPressDown > 70) {
+        bool rising = digitalRead(INTERRUPT_PIN);
+        if (!rising) {
+            buttonPressDown = millis();
+        } else if (millis() - buttonPressDown > LONG_PRESS_TIME ){
+            if (drillAngleChanged) {
+                drillDir = wallNormal;
+            } else {
+                drillDir = RotDir(45, wallZ, wallNormal);
+            }
+            drillAngleChanged = !drillAngleChanged; 
+            buttonPressDown = millis();
+        }
+        if (drillAngleChanged) {
+            Serial.println("DrillAngle now at 45 degree to the Wall"); 
+        } else {
+            Serial.println("DrillAngle now at 90 degree to the Wall"); 
+        }
+    }
+       
+}
+
 double CurrentMeasurment() {
     double motorCurrent(0);
     motorCurrentHistory[counter % FILTERLENGTH] = CURRENT_FACTOR * analogRead(CURRENT_SENSE_PIN);
@@ -314,6 +335,7 @@ void initSequLed(uint32_t color) {
     delay(600);
     strip.clear();
     strip.setPixelColor(LedCenter, color);
+    strip.setPixelColor(LedTop, color);
     strip.show();
 }
 
@@ -348,7 +370,8 @@ void preciceInit() {
     preciceInitialize = false;
     imu::Quaternion quat = bno.getQuat();
     wallNormal = quat.rotateVector(yGlobal);
-    wallNormal = RotDir(ANGLE_DISPLACEMENT, quat.rotateVector(zGlobal).invert(), wallNormal);
+    wallZ = quat.rotateVector(zGlobal).invert();
+    wallNormal = RotDir(ANGLE_DISPLACEMENT, wallZ, wallNormal);
     Serial.print("X: ");
     Serial.print(wallNormal.x());
     Serial.print("\tY: ");
@@ -365,6 +388,7 @@ void preciceInit() {
 void Init() {
     initialize = false;
     imu::Quaternion quat = bno.getQuat();
+    wallZ = quat.rotateVector(zGlobal).invert();
     wallNormal = quat.rotateVector(xGlobal);
     drillDir = wallNormal;
     Serial.print("X: ");
