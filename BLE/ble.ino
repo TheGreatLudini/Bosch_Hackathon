@@ -16,11 +16,6 @@
 //#define DEBUG_ACCELERATION
 //#define DEBUG_INTERRUPT
 //#define DEBUG_ANGLE_DISPLACEMENT_MOTOR
-//#define DEBUG_TRIGGER
-
-//#define DEBUG_BLE
-//#define DEBUG_BLE_RECIVE
-
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
 Adafruit_NeoPixel strip(LED_COUNT, LED_PIN, NEO_GRB + NEO_KHZ800);
@@ -96,12 +91,10 @@ void setup() {
     pinMode(TRIGGER_PIN, INPUT);
     pinMode(CURRENT_SENSE_PIN, INPUT);
     pinMode(MOTOR_SPEED_PIN, OUTPUT);
-    //pinMode(VOLT_BACK_PIN, INPUT);
+    pinMode(VOLT_BACK_PIN, INPUT);
     pinMode(VOLT_FOR_PIN, INPUT);
 
     memset(motorCurrentHistory, 0, FILTERLENGTH * 8);
-    // attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), onInterrupt, CHANGE);
-    // initBLE();
     Serial.println("Setup done");
 }
     
@@ -123,10 +116,6 @@ void loop(void)
                 && (millis() - triggerPushTime) > TRIGGER_MIN_DUR)) {
         setAngle();
     }
-
-    //if (digitalRead(INTERRUPT_PIN) == LOW) {
-        //setAngle();
-    //}
     
     bno.getEvent(&accelerationData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
     
@@ -147,9 +136,9 @@ void loop(void)
     }
     // -------------------
     // calculate misalignment/errors
-    imu::Quaternion quat = bno.getQuat();
+    imu::Quaternion quat = bno.getQuat(); // get oriantation 
+
     // Coordinate system axes of screw driver in global coordinates, x is drilling axis:
-    
     imu::Vector<3> xLocal = quat.rotateVector(xGlobal);
     imu::Vector<3> yLocal = quat.rotateVector(yGlobal);
     imu::Vector<3> zLocal = quat.rotateVector(zGlobal);
@@ -162,6 +151,7 @@ void loop(void)
 
     // -------------------
     // set Leds and Motorspeed acording to misalignment
+    // calculate motorspeed
     uint8_t motorSpeed(0);
     if (localErrorTotal < MOTOR_ON_THESHOLD) {
         // The higher this motor speed variable, the slower the motor unfortunately
@@ -171,13 +161,16 @@ void loop(void)
         Serial.println(motorSpeed);
         #endif
     } else {
+        // turn the motor off
         #ifdef DEBUG_ANGLE_DISPLACEMENT_MOTOR
         Serial.println("Bad");
         #endif
         motorSpeed = 255;
     }
+    // set motorspeed motor speed of 255 means the motor is turned off
     analogWrite(MOTOR_SPEED_PIN, motorSpeed);
 
+    // set leds
     setLeds(localLeftRightError, localUpDownError, localErrorTotal);
     
     // -------------------
@@ -215,6 +208,10 @@ void loop(void)
     #endif
 }
 
+/**
+ * Handels the trigger push events and sets the corresponing 
+ * initialization flags (preciceInitialize and initialize)
+ */ 
 void setAngle()
 {
     #ifdef DEBUG_INTERRUPT
@@ -233,11 +230,13 @@ void setAngle()
         preciceInitialize = false;
         initialize = true;
         interruptTime = millis();
-    }
-        //Serial.println("Initializing");    
+    }  
 }
 
-
+/**
+ * Measures the motor current with a moving averafe of FILTERLENGTH
+ * the raw data is stored in motorCurrentHistory wich is used for the moving average
+ */
 double CurrentMeasurment() {
     double motorCurrent(0);
     motorCurrentHistory[counter % FILTERLENGTH] = CURRENT_FACTOR * analogRead(CURRENT_SENSE_PIN);
@@ -254,20 +253,21 @@ double CurrentMeasurment() {
 
 }
 
+/**
+ * Measures the motor voltage with a moving average of VOLT_FILTERLENGTH 
+ * the raw data is stored in motorCurrentHistory wich is used for the moving average
+ */ 
 double VoltageMeasurment() {
     double voltage(0);
     uint16_t voltForw = analogRead(VOLT_FOR_PIN); 
-    //uint16_t voltBack = analogRead(VOLT_BACK_PIN);
-    forwardDir = true;
-    voltageHistory[voltCounter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltForw);
-    
-    // if (voltForw > voltBack) {
-    //     forwardDir = true;
-    //     voltageHistory[voltCounter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltForw - voltBack);
-    // } else {
-    //     forwardDir = false;
-    //     voltageHistory[voltCounter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltBack - voltForw);
-    // }    
+    uint16_t voltBack = analogRead(VOLT_BACK_PIN);
+    if (voltForw > voltBack) {
+        forwardDir = true;
+        voltageHistory[voltCounter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltForw - voltBack);
+    } else {
+        forwardDir = false;
+        voltageHistory[voltCounter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltBack - voltForw);
+    }    
     for (int i = 0; i < VOLT_FILTERLENGTH; i++) {
         voltage += voltageHistory[i];
     }
@@ -281,15 +281,20 @@ double VoltageMeasurment() {
 
 }
 
+/**
+ * show the Led sequence when the inizialisation was sucessful 
+ * 
+ * @param color the color in wich the leds are to be shown 
+ */
 void initSequLed(uint32_t color) {
     strip.clear();
     strip.show();
     for(int i = 1; i <= LED_COUNT - 1; i++) {
+        i % 3 ? strip.setPixelColor(LedTop, BLACK) : strip.setPixelColor(LedTop, color);
         strip.fill(color, 1, i);
         strip.show();
         delay(50);
     }
-    delay(100);
     strip.clear();
     strip.setPixelColor(LedCenter, color);
     strip.setPixelColor(LedTop, color);
@@ -299,17 +304,17 @@ void initSequLed(uint32_t color) {
 
 void setLeds(double localLeftRightError, double localUpDownError, double localErrorTotal) {
     if (localUpDownError >= 0) {
-        strip.setPixelColor(LedUp, 0, localUpDownError * 255, 0);
+        strip.setPixelColor(LedUp, 0,  LED_INCREASE * localUpDownError * 255, 0);
         strip.setPixelColor(LedDown, BLACK);
     } else {
-        strip.setPixelColor(LedDown, 0, -localUpDownError * 255, 0);
+        strip.setPixelColor(LedDown, 0, - LED_INCREASE * localUpDownError * 255, 0);
         strip.setPixelColor(LedUp, BLACK);
     }
     if (localLeftRightError <= 0) {
-        strip.setPixelColor(LedLeft, 0, -localLeftRightError * 255, 0);
+        strip.setPixelColor(LedLeft, 0, - LED_INCREASE * localLeftRightError * 255, 0);
         strip.setPixelColor(LedRight, BLACK);
     } else {
-        strip.setPixelColor(LedRight, 0, localLeftRightError * 255, 0);
+        strip.setPixelColor(LedRight, 0,  LED_INCREASE * localLeftRightError * 255, 0);
         strip.setPixelColor(LedLeft, BLACK);
     }
     if (localErrorTotal < CENTER_LED_ON_THESHOLD) {
@@ -328,7 +333,7 @@ void preciceInit() {
     preciceInitialize = false;
     imu::Quaternion quat = bno.getQuat();
     wallNormal = quat.rotateVector(yGlobal);
-    wallZ = quat.rotateVector(zGlobal).invert();
+    wallZ = quat.rotateVector(zGlobal);
     wallNormal = RotDir(ANGLE_DISPLACEMENT, wallZ, wallNormal);
     Serial.print("X: ");
     Serial.print(wallNormal.x());
@@ -368,132 +373,3 @@ imu::Vector<3> RotDir(double angle, imu::Vector<3> rotAxis, imu::Vector<3> VecTo
     imu::Quaternion rotQuat(cos(phi / 2), rotAxis.scale(sin(phi / 2)));
     return rotQuat.rotateVector(VecToRotate);
 }
-
-
-// void initBLE(){
-
-//     // begin initialization
-//     if (!BLE.begin()) {
-//         Serial.println("starting BLE failed!");
-//         while (1);
-//     }
-
-//     /* Set a local name for the BLE device
-//         This name will appear in advertising packets
-//         and can be used by remote devices to identify this BLE device
-//         The name can be changed but maybe be truncated based on space left in advertisement packet
-//     */
-//     BLE.setEventHandler(BLEConnected, ConnectHandler);
-//     BLE.setEventHandler(BLEDisconnected, DisconnectHandler);
-//     BLE.setLocalName("Schraubenmaster4000");
-//     Serial.println("BLE name set");
-//     Serial.println(BLE.address());
-
-
-//     //BLE.setAdvertisedService(angleService); // add the service UUID
-
-//     angleService.addCharacteristic(SetAngleCharLR); // add the battery level characteristic
-//     angleService.addCharacteristic(SetAngleCharUD); // add the battery level characteristic
-//     angleService.addCharacteristic(SendScalarUD); // add the battery level characteristic
-//     angleService.addCharacteristic(SendScalarLR); // add the battery level characteristic
-//     angleService.addCharacteristic(CalibrateChar); // add the battery level characteristic
-
-
-//     BLE.addService(angleService);
-
-//     SetAngleCharLR.writeValue(1111111111); // set initial value for this characteristic
-//     SetAngleCharUD.writeValue(1111111111); // set initial value for this characteristic
-//     SendScalarLR.writeValue(1111111111); // set initial value for this characteristic
-//     SendScalarUD.writeValue(1111111111); // set initial value for this characteristic
-//     CalibrateChar.writeValue(0); // set initial value for this characteristic
-
-
-//     // start advertising
-//     BLE.advertise();
-
-//     Serial.println("Bluetooth device active, waiting for connections...");
-    
-// }
-
-// void loopBLE(){
-//     // wait for a BLE central
-//     BLEDevice central = BLE.central();
-    
-    
-//     // if a central is connected to the peripheral:
-//     if (central) {
-        
-//         // #ifdef DEBUG_BLE
-//         // Serial.print("Connected to central: ");
-//         // // print the central's BT address:
-//         // Serial.println(central.address());
-//         // #endif
-//         if(CalibrateChar.written()) {
-//             preciceInit();
-//         }
-//         double LR(0);
-//         double UD(0);
-//         bool newDrillAngle = false;
-//         if(SetAngleCharLR.written()){
-//             newDrillAngle = true;
-//             double LR = SetAngleCharLR.value(); 
-//             #ifdef DEBUG_BLE_RECIVE
-//             Serial.print("recived LR: ");
-//             Serial.println(LR);
-//             #endif
-//         }
-//         if(SetAngleCharUD.written()) {
-//             newDrillAngle = true;
-//             double UD = SetAngleCharLR.value(); 
-//             #ifdef DEBUG_BLE_RECIVE
-//             Serial.print("recived UD: ");
-//             Serial.println(UD);
-//             #endif
-//         }
-//         if (newDrillAngle) {
-//             drillDir = wallNormal;
-//             drillDir = RotDir(LR, wall_X, drillDir);
-//             drillDir = RotDir(UD, wall_Y, drillDir);
-//         }
-//         if (abs(millis() - lastSendTime) > 500) {
-//             SendScalarUD.writeValue((float)localUpDownError);
-//             // Serial.println("I wrote a value to BLE char.");
-//             // SendScalarUD.valueUpdated();
-//             SendScalarLR.writeValue((float)localLeftRightError);
-//             lastSendTime = millis();
-//         }
-//         #ifdef DEBUG_BLE
-//             Serial.print("Send UD: ");
-//             Serial.print((float)localUpDownError);
-//             Serial.print("\tSend LR: ");
-//             Serial.println((float)localUpDownError);
-//         #endif
-
-//     }
-//     if(CalibrateChar.written()){
-//         CalibrateChar.writeValue(0);
-//     }
-// }
-
-// /**
-//  * Encodes Values that are send over BLE 
-//  * 2 values with 5 digits each 
-//  * first digit: 1 -> positve value 
-//  *              0 -> negative Value
-//  */
-// unsigned int encodeValue(double leftRight, double upDown) {
-//     uint32_t LR = abs(leftRight) * 1000;
-//     uint32_t UD = abs(upDown) * 1000;
-//     leftRight > 0 ? LR += 10000 : LR = LR;
-//     upDown > 0 ? UD += 10000 : UD = UD;
-//     uint32_t retVal = (LR * 100000) + UD;
-
-//     #ifdef DEBUG_BLE
-//         Serial.print("LR_Error: ");
-//         Serial.print(localLeftRightError);
-//         Serial.print("\tUD_Error: ");
-//         Serial.println(localUpDownError);
-//         Serial.println(retVal);
-//     #endif
-//     return retVal;
-// }

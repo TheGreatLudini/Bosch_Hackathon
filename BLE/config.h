@@ -17,6 +17,7 @@ const uint32_t LONG_PRESS_TIME(400);
 const uint8_t LED_PIN(11);
 const uint8_t LED_COUNT(6);
 const float CENTER_LED_DECREASE(4.5);
+const float LED_INCREASE(5.0);
 enum Leds : uint8_t {
     LedTop,
     LedCenter,
@@ -30,18 +31,18 @@ enum Leds : uint8_t {
 const uint8_t MOTOR_SPEED_PIN = 6;
 const float ANGLE_DISPLACEMENT(8.0); // offset of the drilling axis to the buttom plate
 
-const double MOTOR_ON_THESHOLD(0.3);
-const int MOTOR_SPEED_SENSITIVITY(500); // sensitivity of motor to angle displacement, the higher the more sensitive
-const double CENTER_LED_ON_THESHOLD(0.15);
+const double MOTOR_ON_THESHOLD(0.14);
+const int MOTOR_SPEED_SENSITIVITY(1200); // sensitivity of motor to angle displacement, the higher the more sensitive
+const double CENTER_LED_ON_THESHOLD = MOTOR_ON_THESHOLD;
 
 // IMU Calibration in degree
 // TODO to be determined
 imu::Vector<3> xGlobal(1.0, 0.0, 0.0);
 imu::Vector<3> yGlobal(0.0, 1.0, 0.0);
 imu::Vector<3> zGlobal(0.0, 0.0, 1.0);
-// imu::Vector<3> xGlobal(-0.05023, 0.01451, -0.99862);
-// imu::Vector<3> yGlobal(0.01260, 0.00079, 0.01389);
-// imu::Vector<3> zGlobal(0.99861, -0.01188, -0.05040);
+// imu::Vector<3> zGlobal(0.05023, -0.01451, 0.99862);
+// imu::Vector<3> yGlobal(0.01260, 0.99979, 0.01389);
+// imu::Vector<3> xGlobal(0.99861, -0.01188, -0.05040);
 
 // Current measurement
 #define CURRENT_SENSE_PIN A6
@@ -71,30 +72,5 @@ void Init();
 imu::Vector<3> RotDir(double angle, imu::Vector<3> rotAxis, imu::Vector<3> VecToRotate);
 void matrixMultip(double* matA, double* matB, double* matResult, int m, int p, int q, int n);
 unsigned int encodeValue(double leftRight, double upDown);
-// BLE Battery Service
 
-// BLEService angleService("aa461740-dc53-4624-97bd-0fee7b1212bb");
-// ;
-
-// // BLE Battery Level Characteristic
-// //BLEUnsignedIntCharacteristic SetAngleChar("951a4e8a-16a8-46a7-8962-0d5dc72881b5", BLERead | BLEWrite);
-// BLEIntCharacteristic SetAngleCharLR("951a4e8a-16a8-46a7-8962-0d5dc72881b5", BLERead | BLEWrite);
-// BLEIntCharacteristic SetAngleCharUD("05d47d9d-6295-491d-81ac-375395100e1e", BLERead | BLEWrite);
-// BLEFloatCharacteristic SendScalarLR("de58c0ab-e1ee-4e87-a578-b40af4f5822b", BLERead | BLEWrite | BLENotify);
-// BLEFloatCharacteristic SendScalarUD("a71f3fc6-f97c-4659-9ca2-76a67dede2e3", BLERead | BLEWrite | BLENotify);
-// BLEBoolCharacteristic CalibrateChar("5b880d68-b5b9-420c-a528-d21beb197155", BLERead | BLENotify);
-
-// void ConnectHandler(BLEDevice central) {
-//   // central connected event handler
-//   Serial.print("Connected event, central: ");
-//   Serial.println(central.address());
-//   BLE.advertise();
-// }
-
-// void DisconnectHandler(BLEDevice central) {
-//   // central disconnected event handler
-//   Serial.print("Disconnected event, central: ");
-//   Serial.println(central.address());
-//   BLE.advertise();
-// }
 #endif
