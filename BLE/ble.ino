@@ -151,31 +151,11 @@ void loop(void)
     if (!initGuard) {
         if (preciceInitialize) {
             preciceInit();
-            strip.clear();
-            strip.show();
-            for(int i = 1; i <= LED_COUNT; i++) {
-                strip.fill(BLUE, 0, i);
-                strip.show();
-                delay(50);
-            }
-            delay(600);
-            strip.clear();
-            strip.setPixelColor(LedCenter, BLUE);
-            strip.show();
+            initSequLed(BLUE);
 
         } else if (initialize) {
             Init();
-            strip.clear();
-            strip.show();
-            for(int i = 1; i <= LED_COUNT; i++) {
-                strip.fill(ORANGE, 0, i);
-                strip.show();
-                delay(50);
-            }
-            delay(600);
-            strip.clear();
-            strip.setPixelColor(LedCenter, ORANGE);
-            strip.show();
+            initSequLed(ORANGE);
         }
     } else if (abs(millis() - interruptTime) > 500) {
         initGuard = false;
@@ -323,6 +303,20 @@ double VoltageMeasurment() {
 
 }
 
+void initSequLed(uint32_t color) {
+    strip.clear();
+    strip.show();
+    for(int i = 1; i <= LED_COUNT; i++) {
+        strip.fill(color, 0, i);
+        strip.show();
+        delay(50);
+    }
+    delay(600);
+    strip.clear();
+    strip.setPixelColor(LedCenter, color);
+    strip.show();
+}
+
 void setLeds(double localLeftRightError, double localUpDownError, double localErrorTotal) {
     if (localUpDownError >= 0) {
         strip.setPixelColor(LedUp, 0, localUpDownError * 255, 0);
@@ -332,14 +326,14 @@ void setLeds(double localLeftRightError, double localUpDownError, double localEr
         strip.setPixelColor(LedUp, BLACK);
     }
     if (localLeftRightError <= 0) {
-        strip.setPixelColor(LedLeft, 0, localLeftRightError * 255, 0);
+        strip.setPixelColor(LedLeft, 0, -localLeftRightError * 255, 0);
         strip.setPixelColor(LedRight, BLACK);
     } else {
-        strip.setPixelColor(LedRight, 0, -localLeftRightError * 255, 0);
+        strip.setPixelColor(LedRight, 0, localLeftRightError * 255, 0);
         strip.setPixelColor(LedLeft, BLACK);
     }
     if (localErrorTotal < CENTER_LED_ON_THESHOLD) {
-        strip.setPixelColor(LedCenter, 0, (CENTER_LED_ON_THESHOLD - localErrorTotal) * 255, 0);
+        strip.setPixelColor(LedCenter, 0, (1.0 - CENTER_LED_DECREASE * localErrorTotal) * 255, 0);
     } else {
         strip.setPixelColor(LedCenter, BLACK);
     }
