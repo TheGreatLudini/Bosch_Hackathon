@@ -11,13 +11,14 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
+        android:clickable="false"
         android:text="Read Data"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.498"
+        app:layout_constraintHorizontal_bias="0.517"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.188" />
+        app:layout_constraintVertical_bias="0.692" />
 
     <TextView
         android:id="@+id/textView"
@@ -76,5 +77,52 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.489"
         app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/lrErrorDisplay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="128dp"
+        android:clickable="false"
+        android:text="Error left-right-direction"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.501"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView" />
+
+    <TextView
+        android:id="@+id/udErrorDisplay"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:clickable="false"
+        android:text="Error up-down-direction"
+        app:layout_constraintBottom_toTopOf="@+id/readDataButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.503"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/lrErrorDisplay"
+        app:layout_constraintVertical_bias="0.125" />
+
+    <com.example.boostboxapp.VerticalSeekBar
+        android:id="@+id/seekBarUD"
+        android:layout_width="wrap_content"
+        android:layout_height="200dp"
+        android:max="180"
+        app:layout_constraintBottom_toTopOf="@+id/readDataButton"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/udErrorDisplay"
+        app:layout_constraintVertical_bias="0.566" />
+
+    <SeekBar
+        android:id="@+id/seekBarLR"
+        android:layout_width="167dp"
+        android:layout_height="17dp"
+        android:clickable="false"
+        android:max="180"
+        app:layout_constraintBottom_toTopOf="@+id/lrErrorDisplay"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -48,15 +48,17 @@ public class BLEService extends Service {
     private static final int STATE_CONNECTED = 2;
 
     public final static String ACTION_GATT_CONNECTED =
-            "com.example.bluetooth.le.ACTION_GATT_CONNECTED";
+            "com.example.boostboxapp.ACTION_GATT_CONNECTED";
     public final static String ACTION_GATT_DISCONNECTED =
-            "com.example.bluetooth.le.ACTION_GATT_DISCONNECTED";
+            "com.example.boostboxapp.ACTION_GATT_DISCONNECTED";
     public final static String ACTION_GATT_SERVICES_DISCOVERED =
-            "com.example.bluetooth.le.ACTION_GATT_SERVICES_DISCOVERED";
+            "com.example.boostboxapp.ACTION_GATT_SERVICES_DISCOVERED";
     public final static String ACTION_DATA_AVAILABLE =
-            "com.example.bluetooth.le.ACTION_DATA_AVAILABLE";
+            "com.example.boostboxapp.ACTION_DATA_AVAILABLE";
     public final static String EXTRA_DATA =
-            "com.example.bluetooth.le.EXTRA_DATA";
+            "com.example.boostboxapp.EXTRA_DATA";
+    public final static String EXTRA_UUID =
+            "com.example.boostboxapp.EXTRA_UUID";
 
     // Implements callback methods for GATT events that the app cares about.  For example,
     // connection change and services discovered.
@@ -155,6 +157,7 @@ public class BLEService extends Service {
                 intent.putExtra(EXTRA_DATA, new String(data) + "\n" + stringBuilder.toString());
             }*/
         intent.putExtra(EXTRA_DATA, dataAsFloat + "");
+        intent.putExtra(EXTRA_UUID, characteristic.getUuid().toString());
         sendBroadcast(intent);
     }
 

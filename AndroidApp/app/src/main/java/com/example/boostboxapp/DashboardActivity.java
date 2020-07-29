@@ -19,6 +19,7 @@ import android.os.IBinder;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.SeekBar;
 import android.widget.SimpleExpandableListAdapter;
 import android.widget.TextView;
 
@@ -37,6 +38,7 @@ public class DashboardActivity extends AppCompatActivity {
     private BLEService mBluetoothLeService;
     private BluetoothGattService arduinoService;
     private BluetoothGattCharacteristic upDownErrorChar;
+    private BluetoothGattCharacteristic leftRightErrorChar;
     private BluetoothGattCharacteristic setAngleLRChar;
     private BluetoothGattCharacteristic setAngleUDChar;
 
@@ -90,8 +92,8 @@ public class DashboardActivity extends AppCompatActivity {
                 displayGattServices(mBluetoothLeService.getSupportedGattServices());
             } else if (BLEService.ACTION_DATA_AVAILABLE.equals(action)) {
                 Log.i(TAG, "There is data");
-                Log.i(TAG, "The data is: " + intent.getStringExtra(BLEService.EXTRA_DATA));
-
+                //Log.i(TAG, "The data is: " + intent.getStringExtra(BLEService.EXTRA_DATA));
+                displayDataOnScreen(intent.getStringExtra(BLEService.EXTRA_UUID), intent.getStringExtra(BLEService.EXTRA_DATA));
             }
         }
     };
@@ -121,6 +123,8 @@ public class DashboardActivity extends AppCompatActivity {
                     + gattCharacteristic.getUuid().toString());
             if (gattCharacteristic.getUuid().toString().equals(GattConfigs.UPDOWNERROR_CHAR_UUID)) {
                 upDownErrorChar = gattCharacteristic;
+            } else if (gattCharacteristic.getUuid().toString().equals(GattConfigs.LEFTRIGHTERROR_CHAR_UUID)) {
+                leftRightErrorChar = gattCharacteristic;
             } else if (gattCharacteristic.getUuid().toString().equals(GattConfigs.LRANGLESET_CHAR_UUID)) {
                 setAngleLRChar = gattCharacteristic;
             } else if (gattCharacteristic.getUuid().toString().equals(GattConfigs.UDANGLESET_CHAR_UUID)) {
@@ -136,6 +140,23 @@ public class DashboardActivity extends AppCompatActivity {
 
         mBluetoothLeService.readCharacteristic(upDownErrorChar);
         //mBluetoothLeService.setCharacteristicNotification(upDownErrorChar, true);
+    }
+
+    public void displayDataOnScreen(String uuid, String dataToDisplay) {
+        double data = Double.parseDouble(dataToDisplay);
+        long angle = Math.round(Math.toDegrees(Math.asin(data)));
+        if (uuid.equals(GattConfigs.UPDOWNERROR_CHAR_UUID)) {
+            TextView udAngleDisplay = (TextView)findViewById(R.id.udErrorDisplay);
+            SeekBar lrSeekBar = (SeekBar)findViewById(R.id.seekBarLR);
+            udAngleDisplay.setText("" + angle);
+            lrSeekBar.setProgress((int)angle + 90);
+        } else if (uuid.equals(GattConfigs.LEFTRIGHTERROR_CHAR_UUID)) {
+            TextView lrAngleDisplay = (TextView)findViewById(R.id.lrErrorDisplay);
+            VerticalSeekBar udSeekBar = (VerticalSeekBar)findViewById(R.id.seekBarUD);
+            udSeekBar.setProgress((int)angle + 90);
+            lrAngleDisplay.setText("" + angle);
+        }
+
     }
 
     @Override
