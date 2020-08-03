@@ -168,7 +168,8 @@ void loop(void)
         motorSpeed = 255;
     }
     // set motorspeed motor speed of 255 means the motor is turned off
-    analogWrite(MOTOR_SPEED_PIN, motorSpeed);
+    // analogWrite(MOTOR_SPEED_PIN, motorSpeed);
+    analogWrite(MOTOR_SPEED_PIN, 0);
 
     // set leds
     setLeds(localLeftRightError, localUpDownError, localErrorTotal);
@@ -203,7 +204,7 @@ void loop(void)
     #endif
 
     #ifdef DEBUG_ACCELERATION
-    Serial.print("\taccX: ");
+    Serial.print("\taccX:");
     Serial.println(accelerationData.acceleration.x);
     #endif
 }
@@ -273,7 +274,7 @@ double VoltageMeasurment() {
     }
     voltage /= VOLT_FILTERLENGTH;
     voltCounter++;
-    #ifdef DEBUG_CURRENT
+    #ifdef DEBUG_VOLTAGE
         Serial.print("\tU :");
         Serial.println(voltage);
     #endif
