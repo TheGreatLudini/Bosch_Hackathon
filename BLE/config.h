@@ -50,6 +50,8 @@ const double SENSE_RESISTANCE(0.002);
 const double CURRENT_FACTOR = REF_VOLTAGE / (1023 * GAIN * SENSE_RESISTANCE);
 const double VOLTAGE_FACTOR = REF_VOLTAGE * 5.7 / 1023; // 47k und 10k Wiederstäde im Spannungsteiler
 
+const double CURRENT_TH(1.0)
+
 #define TRIGGER_PIN A0
 const uint16_t FILTERLENGTH(50);
 const uint16_t VOLT_FILTERLENGTH(10);

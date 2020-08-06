@@ -1,4 +1,4 @@
- #include <Wire.h>
+#include <Wire.h>
 #include <Arduino.h>
 #include <Adafruit_Sensor.h>
 #include <Adafruit_BNO055.h>
@@ -43,6 +43,8 @@ double voltageHistory[VOLT_FILTERLENGTH];
 uint32_t counter(0);
 uint32_t voltCounter(0);
 bool forwardDir = true;
+
+bool MotorStartUp = false;
 
 bool lastTriggerState = false; // false if trigger not pushed
 bool currentTriggerState = false;
@@ -103,6 +105,11 @@ void loop(void)
     double motorCurrent = CurrentMeasurment();
     double voltage = VoltageMeasurment();
 
+    if (motorCurrent > CURRENT_TH) {
+        double
+    } else {
+        mo
+    }
     lastTriggerState = currentTriggerState; 
     currentTriggerState = analogRead(TRIGGER_PIN) > VOLT_TRIGGER_TH;
     if ((currentTriggerState != lastTriggerState) && currentTriggerState) {
@@ -251,7 +258,18 @@ double CurrentMeasurment() {
         Serial.print(motorCurrent);
     #endif
     return motorCurrent;
-
+}
+double getCurrentDerrivativ(double motorCurrent) {
+    double derrivative(0);
+    for (int i = counter % FILTERLENGTH; i < (counter % FILTERLENGTH) - 10; i--) {
+        derrivative += motorCurrent - motorCurrentHistory[i % FILTERLENGTH];
+    }
+    derrivative /= 10;
+    #ifdef DEBUG_CURRENT
+        Serial.print("dI :");
+        Serial.print(derrivative);
+    #endif
+    return derrivative
 }
 
 /**
