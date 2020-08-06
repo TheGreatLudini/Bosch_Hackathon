@@ -44,7 +44,8 @@ uint32_t counter(0);
 uint32_t voltCounter(0);
 bool forwardDir = true;
 
-bool MotorStartUp = false;
+bool motorStartUp = false;
+bool motorOFF = false;
 
 bool lastTriggerState = false; // false if trigger not pushed
 bool currentTriggerState = false;
@@ -93,7 +94,6 @@ void setup() {
     pinMode(TRIGGER_PIN, INPUT);
     pinMode(CURRENT_SENSE_PIN, INPUT);
     pinMode(MOTOR_SPEED_PIN, OUTPUT);
-    pinMode(VOLT_BACK_PIN, INPUT);
     pinMode(VOLT_FOR_PIN, INPUT);
 
     memset(motorCurrentHistory, 0, FILTERLENGTH * 8);
@@ -102,14 +102,10 @@ void setup() {
     
 void loop(void) 
 {   
-    double motorCurrent = CurrentMeasurment();
-    double voltage = VoltageMeasurment();
+    
 
-    if (motorCurrent > CURRENT_TH) {
-        double
-    } else {
-        mo
-    }
+    
+
     lastTriggerState = currentTriggerState; 
     currentTriggerState = analogRead(TRIGGER_PIN) > VOLT_TRIGGER_TH;
     if ((currentTriggerState != lastTriggerState) && currentTriggerState) {
@@ -124,6 +120,20 @@ void loop(void)
         setAngle();
     }
     
+    double motorCurrent = CurrentMeasurment();
+    double voltage = VoltageMeasurment();
+
+    if (motorCurrent > CURRENT_TH) {
+        double derrivative = getCurrentDerrivativ(motorCurrent);
+        derrivative < 0 ? motorStartUp = true : true;
+        if (motorStartUp && derrivative > DERR_CURRENT_TH) {
+            motorOFF = true;
+        }
+    } else {
+        motorStartUp = false;
+    }
+    !currentTriggerState ? motorOFF = false : true;
+
     bno.getEvent(&accelerationData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
     
     //loopBLE(); 
@@ -176,7 +186,8 @@ void loop(void)
     }
     // set motorspeed motor speed of 255 means the motor is turned off
     // analogWrite(MOTOR_SPEED_PIN, motorSpeed);
-    analogWrite(MOTOR_SPEED_PIN, 0);
+    
+    digitalWrite(MOTOR_SPEED_PIN, !motorOFF);
 
     // set leds
     setLeds(localLeftRightError, localUpDownError, localErrorTotal);
@@ -185,14 +196,14 @@ void loop(void)
     // Debug outputs
     #ifdef DEBUG_MOTOR
     Serial.print("Motor Speed: ");
-    Serial.println(motorSpeed);
+    Serial.print(motorSpeed);
     #endif
 
     #ifdef DEBUG_ERROR_DIR
     Serial.print("LR_Error: ");
     Serial.print(localLeftRightError);
     Serial.print("\tUD_Error: ");
-    Serial.println(localUpDownError);
+    Serial.print(localUpDownError);
     #endif
 
     #ifdef DEBUG_LOCAL_VECTOR
@@ -207,13 +218,14 @@ void loop(void)
     Serial.print("\tY: ");
     Serial.print(xLocal.y());
     Serial.print("\tZ: ");
-    Serial.println(xLocal.z());
+    Serial.print(xLocal.z());
     #endif
 
     #ifdef DEBUG_ACCELERATION
     Serial.print("\taccX:");
-    Serial.println(accelerationData.acceleration.x);
+    Serial.print(accelerationData.acceleration.x);
     #endif
+    Serial.println();
 }
 
 /**
@@ -254,22 +266,22 @@ double CurrentMeasurment() {
     motorCurrent = motorCurrent / FILTERLENGTH;
     counter++;
     #ifdef DEBUG_CURRENT
-        Serial.print("I :");
+        Serial.print("\tI :");
         Serial.print(motorCurrent);
     #endif
     return motorCurrent;
 }
 double getCurrentDerrivativ(double motorCurrent) {
     double derrivative(0);
-    for (int i = counter % FILTERLENGTH; i < (counter % FILTERLENGTH) - 10; i--) {
+    for (int i = counter % FILTERLENGTH; i > (counter % FILTERLENGTH) - DERRIV_LENGTH; i--) {
         derrivative += motorCurrent - motorCurrentHistory[i % FILTERLENGTH];
     }
-    derrivative /= 10;
+    derrivative /= DERRIV_LENGTH;
     #ifdef DEBUG_CURRENT
-        Serial.print("dI :");
+        Serial.print("\tdI :");
         Serial.print(derrivative);
     #endif
-    return derrivative
+    return derrivative;
 }
 
 /**
@@ -279,14 +291,11 @@ double getCurrentDerrivativ(double motorCurrent) {
 double VoltageMeasurment() {
     double voltage(0);
     uint16_t voltForw = analogRead(VOLT_FOR_PIN); 
-    uint16_t voltBack = analogRead(VOLT_BACK_PIN);
-    if (voltForw > voltBack) {
-        forwardDir = true;
-        voltageHistory[voltCounter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltForw - voltBack);
-    } else {
-        forwardDir = false;
-        voltageHistory[voltCounter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltBack - voltForw);
-    }    
+    //uint16_t voltBack = analogRead(VOLT_BACK_PIN);
+
+    forwardDir = true;
+    voltageHistory[voltCounter % VOLT_FILTERLENGTH] = VOLTAGE_FACTOR * (voltForw);
+   
     for (int i = 0; i < VOLT_FILTERLENGTH; i++) {
         voltage += voltageHistory[i];
     }
@@ -294,7 +303,7 @@ double VoltageMeasurment() {
     voltCounter++;
     #ifdef DEBUG_VOLTAGE
         Serial.print("\tU :");
-        Serial.println(voltage);
+        Serial.print(voltage);
     #endif
     return voltage;
 
