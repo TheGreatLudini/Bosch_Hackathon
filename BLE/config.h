@@ -52,10 +52,11 @@ const double VOLTAGE_FACTOR = REF_VOLTAGE * 5.7 / 1023; // 47k und 10k Wiederst√
 
 const uint16_t DERRIV_LENGTH(10);
 const double CURRENT_TH(1.0);
-const double DERR_CURRENT_TH(0.1);
+const double DERR_CURRENT_TH(1.2);
 
 #define TRIGGER_PIN A0
-const uint16_t FILTERLENGTH(30);
+const uint16_t FILTERLENGTH(15);
+const uint16_t DERR_FILTERLENGTH(20);
 const uint16_t VOLT_FILTERLENGTH(10);
 const uint16_t VOLT_TRIGGER_TH(500); // analog read value (0-1023) for trigger threshold, the higher the less sensitive
 const uint32_t TRIGGER_DEBOUNCE(20);
