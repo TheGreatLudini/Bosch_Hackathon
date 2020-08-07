@@ -40,7 +40,6 @@ bool drillAngleChanged = false;
 sensors_event_t accelerationData;
 double motorCurrentHistory[FILTERLENGTH];
 double currentHistory[CURR_FILTERLENGTH]; 
-double currentDerrivHistory[DERR_FILTERLENGTH]; 
 double voltageHistory[VOLT_FILTERLENGTH]; 
 uint32_t counter(0);
 uint32_t voltCounter(0);
@@ -72,7 +71,6 @@ void setup() {
     Serial.println("Orientation Sensor Test"); 
     Serial.println("");
 
-    
     /* Initialise the sensor */
     if(!bno.begin())
     {
@@ -84,9 +82,7 @@ void setup() {
     }
     
     delay(1000);
-    Serial.println("Setup almost done");
     bno.setExtCrystalUse(true);
-    Serial.println("Setup almost almost done");
     #ifdef BOARD_NANO
         pinMode(INTERRUPT_PIN, INPUT);
     #else
@@ -99,7 +95,7 @@ void setup() {
     pinMode(MOTOR_SPEED_PIN, OUTPUT);
     pinMode(VOLT_FOR_PIN, INPUT);
 
-    memset(motorCurrentHistory, 0, FILTERLENGTH * 8);
+    //memset(motorCurrentHistory, 0, FILTERLENGTH * 8);
     Serial.println("Setup done");
 }
     
@@ -125,18 +121,15 @@ void loop(void)
 
     if (motorCurrent > CURRENT_TH) {
         double derrivative = getCurrentDerrivativ(motorCurrent);
-        derrivative < -3.0  ? motorStartUp = true : true;
+        derrivative < NEG_DERR_CURRENT_TH  ? motorStartUp = true : true;
         if (motorStartUp && derrivative > DERR_CURRENT_TH) {
             motorOFF = true;
             newCycle = true;
-            for(int i = 0; i < FILTERLENGTH; i++) {
-                currentDerrivHistory[i] = 0.0;
-            }
         }
     } else {
         motorStartUp = false;
     }
-    !currentTriggerState ? motorOFF = false  : true;
+    !currentTriggerState ? motorOFF = false : true;
 
     bno.getEvent(&accelerationData, Adafruit_BNO055::VECTOR_ACCELEROMETER);
     
@@ -190,8 +183,8 @@ void loop(void)
     }
     // set motorspeed motor speed of 255 means the motor is turned off
     // analogWrite(MOTOR_SPEED_PIN, motorSpeed);
-    
-    digitalWrite(MOTOR_SPEED_PIN, motorOFF);
+
+    digitlWrite(MOTOR_SPEED_PIN, motorOFF);
 
     // set leds
     setLeds(localLeftRightError, localUpDownError, localErrorTotal);
@@ -272,22 +265,16 @@ double CurrentMeasurment() {
     currentHistory[counter % CURR_FILTERLENGTH] = motorCurrent;
     return motorCurrent;
 }
+
 double getCurrentDerrivativ(double motorCurrent) {
     double derrivative(0);
-    int pos = (counter - 1) % CURR_FILTERLENGTH;
+    int pos = (counter) % CURR_FILTERLENGTH;
 
     for (int i = 0; i < CURR_FILTERLENGTH; i++) {
         derrivative += currentHistory[pos] - currentHistory[i];
     }
-    derrivative /= CURR_FILTERLENGTH;
-    //derrivative = currentHistory[(counter - 1)% FILTERLENGTH] - currentHistory[(counter - 2)% FILTERLENGTH];
-    currentDerrivHistory[counter % DERR_FILTERLENGTH] = derrivative;
-    if (newCycle) {
-        newCycle = false;
-        for (int i = 0; i < DERR_FILTERLENGTH; i++) {
-            currentDerrivHistory[i] = abs(derrivative);
-        }
-    }
+    derrivative = derrivative / (CURR_FILTERLENGTH - 1);
+    //derrivative = currentHistory[(counter - 1)% CURR_FILTERLENGTH] - currentHistory[(counter - 2)% CURR_FILTERLENGTH];
     #ifdef DEBUG_CURRENT
         Serial.print("\tI :");
         Serial.print(motorCurrent);

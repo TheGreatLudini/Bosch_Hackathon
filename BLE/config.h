@@ -50,14 +50,13 @@ const double SENSE_RESISTANCE(0.002);
 const double CURRENT_FACTOR = REF_VOLTAGE / (1023 * GAIN * SENSE_RESISTANCE);
 const double VOLTAGE_FACTOR = REF_VOLTAGE * 5.7 / 1023; // 47k und 10k Wiederstäde im Spannungsteiler
 
-const uint16_t DERRIV_LENGTH(10);
 const double CURRENT_TH(1.0);
-const double DERR_CURRENT_TH(1.2);
+const double DERR_CURRENT_TH(0.9);
+const double NEG_DERR_CURRENT_TH(-2);
 
 #define TRIGGER_PIN A0
 const uint16_t FILTERLENGTH(15);
-const uint16_t DERR_FILTERLENGTH(10);
-const uint16_t CURR_FILTERLENGTH(30);
+const uint16_t CURR_FILTERLENGTH(10);
 const uint16_t VOLT_FILTERLENGTH(10);
 const uint16_t VOLT_TRIGGER_TH(500); // analog read value (0-1023) for trigger threshold, the higher the less sensitive
 const uint32_t TRIGGER_DEBOUNCE(20);
