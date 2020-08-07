@@ -39,7 +39,7 @@ bool drillAngleChanged = false;
 
 sensors_event_t accelerationData;
 double motorCurrentHistory[FILTERLENGTH];
-double currentHistory[DERR_FILTERLENGTH]; 
+double currentHistory[CURR_FILTERLENGTH]; 
 double currentDerrivHistory[DERR_FILTERLENGTH]; 
 double voltageHistory[VOLT_FILTERLENGTH]; 
 uint32_t counter(0);
@@ -269,17 +269,17 @@ double CurrentMeasurment() {
     }
     motorCurrent = motorCurrent / FILTERLENGTH;
     counter++;
-    currentHistory[counter % DERR_FILTERLENGTH] = motorCurrent;
+    currentHistory[counter % CURR_FILTERLENGTH] = motorCurrent;
     return motorCurrent;
 }
 double getCurrentDerrivativ(double motorCurrent) {
     double derrivative(0);
-    int pos = (counter - 1)% DERR_FILTERLENGTH;
+    int pos = (counter - 1) % CURR_FILTERLENGTH;
 
-    for (int i = 0; i < DERR_FILTERLENGTH; i++) {
+    for (int i = 0; i < CURR_FILTERLENGTH; i++) {
         derrivative += currentHistory[pos] - currentHistory[i];
     }
-    derrivative /= DERR_FILTERLENGTH;
+    derrivative /= CURR_FILTERLENGTH;
     //derrivative = currentHistory[(counter - 1)% FILTERLENGTH] - currentHistory[(counter - 2)% FILTERLENGTH];
     currentDerrivHistory[counter % DERR_FILTERLENGTH] = derrivative;
     if (newCycle) {
@@ -288,11 +288,6 @@ double getCurrentDerrivativ(double motorCurrent) {
             currentDerrivHistory[i] = abs(derrivative);
         }
     }
-    // derrivative = 0;
-    // for (int i = 0; i < FILTERLENGTH; i++) {
-    //     derrivative += currentDerrivHistory[i];
-    // }
-    // derrivative /= FILTERLENGTH;
     #ifdef DEBUG_CURRENT
         Serial.print("\tI :");
         Serial.print(motorCurrent);
