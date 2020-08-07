@@ -184,7 +184,7 @@ void loop(void)
     // set motorspeed motor speed of 255 means the motor is turned off
     // analogWrite(MOTOR_SPEED_PIN, motorSpeed);
 
-    digitlWrite(MOTOR_SPEED_PIN, motorOFF);
+    digitalWrite(MOTOR_SPEED_PIN, motorOFF);
 
     // set leds
     setLeds(localLeftRightError, localUpDownError, localErrorTotal);
